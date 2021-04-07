@@ -27,3 +27,11 @@ export interface OrderInterface {
   output: string;
   timestamp: number;
 }
+
+// Token Interfaces
+
+export interface TokenInterface {
+  id: string;
+  name: string;
+  ticker: string;
+}

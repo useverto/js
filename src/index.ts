@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BalanceInterface, OrderInterface } from "./faces";
+import { BalanceInterface, OrderInterface, TokenInterface } from "./faces";
 
 export default class Verto {
   // === User Functions ===
@@ -25,6 +25,17 @@ export default class Verto {
     const res = await axios.get(
       `https://v2.cache.verto.exchange/user/${address}/orders`
     );
+    return res.data;
+  }
+
+  // === Token Functions ===
+
+  /**
+   * Fetches the tokens traded on Verto.
+   * @returns List of token ids, names, & tickers.
+   */
+  async getTokens(): Promise<TokenInterface[]> {
+    const res = await axios.get(`https://v2.cache.verto.exchange/tokens`);
     return res.data;
   }
 }
