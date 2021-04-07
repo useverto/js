@@ -3,7 +3,9 @@ import Arweave from "arweave";
 import { VaultInterface } from "./faces";
 
 export const fetchContract = async (id: string): Promise<any> => {
-  const { data: res } = await axios.get(`http://localhost:8080/${id}`);
+  const { data: res } = await axios.get(
+    `https://v2.cache.verto.exchange/${id}`
+  );
   return res.state;
 };
 

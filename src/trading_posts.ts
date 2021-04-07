@@ -8,6 +8,7 @@ import {
 } from "./utils";
 import { VaultInterface } from "./faces";
 import ArDB from "ardb";
+import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
 
 export const getTradingPosts = async (
   client: Arweave,
@@ -51,15 +52,15 @@ const _getTradingPosts = async (
 ): Promise<{ posts: string[]; vault: VaultInterface }> => {
   // Fetch all trading posts.
   const gql = new ArDB(client);
-  const query = await gql
+  const query = (await gql
     .search()
     .to(exchangeWallet)
     .tag("Exchange", "Verto")
     .tag("Type", "Genesis")
-    .findAll();
+    .only("owner.address")
+    .findAll()) as GQLEdgeTransactionInterface[];
   const res: string[] = Array.from(
-    // @ts-ignore
-    new Set(query.map((edge: any) => edge.node.owner.address))
+    new Set(query.map((edge) => edge.node.owner.address))
   );
 
   // Fetch the vault of the Verto contract.

@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.14.37.tgz#a3dd8da4eb84a996c36e331df98d82abd76b516e"
   integrity sha512-XYmBiy+ohOR4Lh5jE379fV2IU+6Jn4g5qASinhitfyO71b/sCo6MKsMLF5tc7Zf2CE8hViVQyYSobJNke8OvUw==
 
-ardb@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/ardb/-/ardb-1.0.4.tgz#13c2e63b568641bbfae06221b1928d3c0a1246bd"
-  integrity sha512-GFjow1MskQ92baMZKuwZ4PVNDB4LFK5ZbSdmA+pq34TORlY3Kr9/nEmpiwmtMlObZUqzbhL4BVhVlCKg0bBLiA==
+ardb@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/ardb/-/ardb-1.0.5.tgz#c0361de4fc88e629260e910bfdbf72a2bc814fe3"
+  integrity sha512-SJDk0ivvPyedvRSZaVFScNzDewaIqEfK8A8CTGcMXXLNzm8vbgT9qytpWyZklCkfgChKpuWj2e98HCNhyM580Q==
   dependencies:
     arweave "^1.10.11"
 

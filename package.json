@@ -11,7 +11,7 @@
     "fmt": "prettier --write ."
   },
   "dependencies": {
-    "ardb": "^1.0.4",
+    "ardb": "^1.0.5",
     "arweave": "^1.10.13",
     "axios": "^0.21.1",
     "moment": "^2.29.1"
