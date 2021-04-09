@@ -46,4 +46,14 @@ export default class Verto {
     const res = await axios.get(`${this.endpoint}/token/${id}/price`);
     return res.data;
   }
+
+  /**
+   * Fetches the price history for a given token.
+   * @param id Token contract id.
+   * @returns Dates mapped to prices.
+   */
+  async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
+    const res = await axios.get(`${this.endpoint}/token/${id}/history`);
+    return res.data;
+  }
 }
