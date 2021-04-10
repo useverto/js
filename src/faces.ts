@@ -37,7 +37,7 @@ export interface TokenInterface {
 }
 
 export interface PriceInterface {
-  id: number;
+  price: number;
   name: string;
   ticker: string;
 }
