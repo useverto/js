@@ -35,3 +35,9 @@ export interface TokenInterface {
   name: string;
   ticker: string;
 }
+
+export interface PriceInterface {
+  id: number;
+  name: string;
+  ticker: string;
+}

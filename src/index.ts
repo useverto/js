@@ -1,5 +1,10 @@
 import axios from "axios";
-import { BalanceInterface, OrderInterface, TokenInterface } from "./faces";
+import {
+  BalanceInterface,
+  OrderInterface,
+  PriceInterface,
+  TokenInterface,
+} from "./faces";
 
 export default class Verto {
   public endpoint = "https://v2.cache.verto.exchange";
@@ -40,9 +45,9 @@ export default class Verto {
   /**
    * Fetches the latest price for a given token.
    * @param id Token contract id.
-   * @returns The price as a number, or undefined.
+   * @returns The price with name & ticker, or undefined.
    */
-  async getPrice(id: string): Promise<number | undefined> {
+  async getPrice(id: string): Promise<PriceInterface | undefined> {
     const res = await axios.get(`${this.endpoint}/token/${id}/price`);
     return res.data;
   }
