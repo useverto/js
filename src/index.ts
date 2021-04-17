@@ -4,6 +4,7 @@ import axios from "axios";
 import { interactWrite } from "smartweave";
 import {
   BalanceInterface,
+  OrderBookInterface,
   OrderInterface,
   PriceInterface,
   TokenInterface,
@@ -144,6 +145,32 @@ export default class Verto {
     }
 
     return this.weightedRandom(normalised);
+  }
+
+  /**
+   * Fetches the order book for a specific trading post and token.
+   * @param address The trading post address.
+   * @param id Token contract id.
+   * @returns List of order ids, amounts, rates, & types.
+   */
+  async getOrderBook(
+    address: string,
+    id: string
+  ): Promise<OrderBookInterface[]> {
+    const post: TradingPostInterface = await axios.get(
+      `${this.endpoint}/posts/${address}`
+    );
+    const endpoint = post.endpoint.split("/ping")[0] + "/orders";
+
+    const res = await axios.get(endpoint);
+    const orders: { token: string; orders: OrderBookInterface[] }[] = res.data;
+
+    const entry = orders.find((item) => item.token === id);
+    if (entry) {
+      return entry.orders;
+    } else {
+      return [];
+    }
   }
 
   // =🔐= Private Functions =🔐=

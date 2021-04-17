@@ -51,3 +51,14 @@ export interface TradingPostInterface {
   time: number;
   endpoint: string;
 }
+
+export interface OrderBookInterface {
+  txID: string;
+  amnt: number;
+  rate?: number;
+  addr: string;
+  type: string;
+  createdAt: number;
+  received: number;
+  token?: string;
+}
