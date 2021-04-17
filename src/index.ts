@@ -1,4 +1,7 @@
+import Arweave from "arweave";
+import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
+import { interactWrite } from "smartweave";
 import {
   BalanceInterface,
   OrderInterface,
@@ -6,8 +9,27 @@ import {
   TokenInterface,
 } from "./faces";
 
+const client = new Arweave({
+  host: "arweave.net",
+  port: 443,
+  protocol: "https",
+});
+
 export default class Verto {
+  public arweave = client;
+  public wallet: "use_wallet" | JWKInterface = "use_wallet";
+
   public endpoint = "https://v2.cache.verto.exchange";
+
+  /**
+   *
+   * @param arweave An optional Arweave instance.
+   * @param wallet An optional Arweave keyfile.
+   */
+  constructor(arweave?: Arweave, wallet?: JWKInterface) {
+    if (arweave) this.arweave = arweave;
+    if (wallet) this.wallet = wallet;
+  }
 
   // === User Functions ===
 
@@ -60,5 +82,32 @@ export default class Verto {
   async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
     const res = await axios.get(`${this.endpoint}/token/${id}/history`);
     return res.data;
+  }
+
+  /**
+   * Transfer a specified amount of tokens to another wallet.
+   * @param amount The amount of tokens.
+   * @param id Token contract id.
+   * @param target The receiving address.
+   * @returns The transaction id of the transfer.
+   */
+  async transfer(amount: number, id: string, target: string): Promise<string> {
+    const transaction = await interactWrite(
+      this.arweave,
+      this.wallet,
+      id,
+      {
+        function: "transfer",
+        target,
+        qty: amount,
+      },
+      [
+        { name: "Exchange", value: "Verto" },
+        { name: "Action", value: "Transfer" },
+      ],
+      target
+    );
+
+    return transaction;
   }
 }
