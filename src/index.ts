@@ -157,9 +157,8 @@ export default class Verto {
     address: string,
     id: string
   ): Promise<OrderBookInterface[]> {
-    const post: TradingPostInterface = await axios.get(
-      `${this.endpoint}/posts/${address}`
-    );
+    const { data } = await axios.get(`${this.endpoint}/posts/${address}`);
+    const post: TradingPostInterface = data;
     const endpoint = post.endpoint.split("/ping")[0] + "/orders";
 
     const res = await axios.get(endpoint);
