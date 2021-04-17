@@ -41,3 +41,13 @@ export interface PriceInterface {
   name: string;
   ticker: string;
 }
+
+// Trading Post Interfaces
+
+export interface TradingPostInterface {
+  address: string;
+  balance: number;
+  stake: number;
+  time: number;
+  endpoint: string;
+}

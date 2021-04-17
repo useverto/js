@@ -7,6 +7,7 @@ import {
   OrderInterface,
   PriceInterface,
   TokenInterface,
+  TradingPostInterface,
 } from "./faces";
 
 const client = new Arweave({
@@ -109,5 +110,65 @@ export default class Verto {
     );
 
     return transaction;
+  }
+
+  // === Trading Post Functions ===
+
+  /**
+   * Fetches the currently staked trading posts.
+   * @returns List of trading post addresses, balances, & stakes.
+   */
+  async getTradingPosts(): Promise<TradingPostInterface[]> {
+    const res = await axios.get(`${this.endpoint}/posts`);
+    return res.data;
+  }
+
+  /**
+   * Recommends a random trading post based on it's reputation.
+   * @returns The address of the selected trading post.
+   */
+  async recommendPost(): Promise<string> {
+    const posts = await this.getTradingPosts();
+
+    const reputations: { [address: string]: number } = {};
+    let total = 0;
+    for (const post of posts) {
+      const reputation = this.getReputation(post);
+      reputations[post.address] = reputation;
+      total += reputation;
+    }
+
+    const normalised: { [address: string]: number } = {};
+    for (const post of posts) {
+      normalised[post.address] = reputations[post.address] / total;
+    }
+
+    return this.weightedRandom(normalised);
+  }
+
+  // =🔐= Private Functions =🔐=
+
+  private getReputation(post: TradingPostInterface): number {
+    const stakeWeighted = post.stake / 2;
+    const timeStakedWeighted = post.time / 3;
+    const balanceWeighted = post.balance / 6;
+
+    return parseFloat(
+      (stakeWeighted + timeStakedWeighted + balanceWeighted).toFixed(3)
+    );
+  }
+
+  private weightedRandom(input: { [key: string]: number }): string {
+    let sum = 0;
+    const r = Math.random();
+
+    for (const key of Object.keys(input)) {
+      sum += input[key];
+      if (r <= sum && input[key] > 0) {
+        return key;
+      }
+    }
+
+    return "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
   }
 }
