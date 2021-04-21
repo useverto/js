@@ -10,10 +10,18 @@ export interface VaultInterface {
 
 // User Interfaces
 
+export interface UserInterface {
+  username: string;
+  name: string;
+  addresses: string[];
+  image: string;
+}
+
 export interface BalanceInterface {
   id: string;
   balance: number;
   name: string;
+  ticker: string;
   logo?: string;
 }
 

@@ -9,6 +9,7 @@ import {
   PriceInterface,
   TokenInterface,
   TradingPostInterface,
+  UserInterface,
 } from "./faces";
 
 const client = new Arweave({
@@ -34,6 +35,17 @@ export default class Verto {
   }
 
   // === User Functions ===
+
+  /**
+   * Fetches the user info for a given wallet address or username.
+   * @param input User wallet address or username.
+   * @returns The user's data such as name & image, or undefined.
+   */
+  async getUser(input: string): Promise<UserInterface | undefined> {
+    const res = await axios.get(`${this.endpoint}/user/${input}`);
+    if (res.data === "Not Found") return undefined;
+    return res.data;
+  }
 
   /**
    * Fetches the assets for a given wallet address.
