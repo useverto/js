@@ -48,6 +48,7 @@ export interface PriceInterface {
   price: number;
   name: string;
   ticker: string;
+  type?: "art" | "community" | "custom";
 }
 
 // Trading Post Interfaces
