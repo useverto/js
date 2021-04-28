@@ -36,6 +36,14 @@ export interface OrderInterface {
   timestamp: number;
 }
 
+export interface TransactionInterface {
+  id: string;
+  status: "success" | "pending" | "error";
+  type: "in" | "out";
+  amount: string;
+  timestamp?: number;
+}
+
 // Token Interfaces
 
 export interface TokenInterface {

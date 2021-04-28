@@ -1,6 +1,6 @@
 {
   "name": "@verto/js",
-  "version": "0.0.0-alpha.7",
+  "version": "0.0.0-alpha.8",
   "author": "th8ta LLC",
   "license": "MIT",
   "publishConfig": {
@@ -13,6 +13,7 @@
     "fmt": "prettier --write ."
   },
   "dependencies": {
+    "ardb": "^1.0.8",
     "arweave": "^1.10.13",
     "axios": "^0.21.1",
     "smartweave": "^0.4.29"

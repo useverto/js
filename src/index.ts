@@ -1,3 +1,5 @@
+import ArDB from "ardb";
+import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
 import Arweave from "arweave";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
@@ -9,6 +11,7 @@ import {
   PriceInterface,
   TokenInterface,
   TradingPostInterface,
+  TransactionInterface,
   UserInterface,
 } from "./faces";
 
@@ -65,6 +68,76 @@ export default class Verto {
   async getOrders(address: string): Promise<OrderInterface[]> {
     const res = await axios.get(`${this.endpoint}/user/${address}/orders`);
     return res.data;
+  }
+
+  /**
+   * Fetches the latest transactions for a given wallet address.
+   * @param address User wallet address.
+   * @returns List of transaction ids, statuses, amounts, & timestamps.
+   */
+  async getTransactions(address: string): Promise<TransactionInterface[]> {
+    const gql = new ArDB(this.arweave);
+
+    const inTxs = (await gql
+      .search()
+      .to(address)
+      .limit(5)
+      .find()) as GQLEdgeTransactionInterface[];
+    const outTxs = (await gql
+      .search()
+      .from(address)
+      .limit(5)
+      .find()) as GQLEdgeTransactionInterface[];
+
+    const res: TransactionInterface[] = [];
+
+    for (const { node } of [...inTxs, ...outTxs]) {
+      const appName = node.tags.find((tag) => tag.name === "App-Name");
+
+      let status;
+      let amount;
+      if (appName && appName.value === "SmartWeaveAction") {
+        const input = node.tags.find((tag) => tag.name === "Input");
+
+        if (input) {
+          const parsedInput = JSON.parse(input.value);
+
+          if (parsedInput.function === "transfer" && parsedInput.qty) {
+            const { data: contract } = await axios.get(
+              `${this.endpoint}/${
+                node.tags.find((tag) => tag.name === "Contract")?.value
+              }`
+            );
+
+            amount = `${parsedInput.qty} ${
+              contract.state ? contract.state.ticker : "???"
+            }`;
+
+            if (contract.validity && contract.validity[node.id] === false)
+              status = "error";
+          }
+        }
+      }
+
+      res.push({
+        id: node.id,
+        // @ts-ignore
+        status: node.block ? status || "success" : "pending",
+        type: node.owner.address === address ? "out" : "in",
+        amount: amount || `${parseFloat(node.quantity.ar)} AR`,
+        timestamp: node.block && node.block.timestamp,
+      });
+    }
+
+    return res
+      .sort(
+        (a, b) =>
+          (b.timestamp ||
+            parseFloat(new Date().getTime().toString().substring(0, 10))) -
+          (a.timestamp ||
+            parseFloat(new Date().getTime().toString().substring(0, 10)))
+      )
+      .slice(0, 5);
   }
 
   // === Token Functions ===
