@@ -106,7 +106,7 @@ export default class Verto {
             const { data: contract } = await axios.get(
               `${this.endpoint}/${
                 node.tags.find((tag) => tag.name === "Contract")?.value
-              }`
+              }?filter=state.ticker%20validity.${node.id}`
             );
 
             amount = `${parsedInput.qty} ${
