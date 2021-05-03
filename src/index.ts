@@ -167,7 +167,27 @@ export default class Verto {
    * @returns Dates mapped to prices.
    */
   async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
-    const res = await axios.get(`${this.endpoint}/token/${id}/history`);
+    const res = await axios.get(`${this.endpoint}/token/${id}/priceHistory`);
+    return res.data;
+  }
+
+  /**
+   * Fetches the latest volume for a given token.
+   * @param id Token contract id.
+   * @returns The volume as a number.
+   */
+  async getVolume(id: string): Promise<number> {
+    const res = await axios.get(`${this.endpoint}/token/${id}/volume`);
+    return res.data;
+  }
+
+  /**
+   * Fetches the volume history for a given token.
+   * @param id Token contract id.
+   * @returns Dates mapped to volumes.
+   */
+  async getVolumeHistory(id: string): Promise<{ [date: string]: number }> {
+    const res = await axios.get(`${this.endpoint}/token/${id}/volumeHistory`);
     return res.data;
   }
 
