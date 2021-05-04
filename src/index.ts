@@ -1,18 +1,23 @@
 import ArDB from "ardb";
 import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
 import Arweave from "arweave";
+import Transaction from "arweave/node/lib/transaction";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
 import { interactWrite } from "smartweave";
 import {
   BalanceInterface,
+  ConfigInterface,
+  FeeInterface,
   OrderBookInterface,
   OrderInterface,
   PriceInterface,
+  SwapInterface,
   TokenInterface,
   TradingPostInterface,
   TransactionInterface,
   UserInterface,
+  VaultInterface,
 } from "./faces";
 
 const client = new Arweave({
@@ -26,6 +31,9 @@ export default class Verto {
   public wallet: "use_wallet" | JWKInterface = "use_wallet";
 
   public endpoint = "https://v2.cache.verto.exchange";
+  private EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
+  private EXCHANGE_CONTRACT = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
+  private EXCHANGE_FEE = 0.005;
 
   /**
    *
@@ -218,6 +226,125 @@ export default class Verto {
     return transaction;
   }
 
+  /**
+   * Create a swap.
+   * @param input An object containing the amount of input, along with the unit.
+   * @param output An object containing the output unit, with an optional amount.
+   * @param post The receiving trading post address.
+   * @param tags Optional custom tags.
+   * @returns An object containing the transactions and total cost of the swap.
+   */
+  async createSwap(
+    input: {
+      amount: number;
+      unit: string | "AR";
+    },
+    output: {
+      amount?: number;
+      unit: string | "AR";
+    },
+    post: string,
+    tags?: { name: string; value: string }[]
+  ): Promise<SwapInterface | undefined> {
+    if (input.unit === "AR") {
+      if (/[a-z0-9_-]{43}/i.test(output.unit)) {
+        // AR -> Token.
+        const transaction = await this.arweave.createTransaction(
+          {
+            target: post,
+            quantity: client.ar.arToWinston(input.amount.toString()),
+          },
+          this.wallet
+        );
+
+        for (const { name, value } of [
+          { name: "Exchange", value: "Verto" },
+          { name: "Type", value: "Buy" },
+          { name: "Token", value: output.unit },
+          ...(tags || []),
+        ]) {
+          transaction.addTag(name, value);
+        }
+
+        const fee = await this.createExchangeFee(input.amount);
+
+        return {
+          transactions: [transaction, fee.transaction],
+          cost: {
+            ar:
+              input.amount + this.getTransactionFee(transaction) + fee.cost.ar,
+            token: 0,
+          },
+        };
+      } else {
+        // Unsupported.
+      }
+    } else if (/[a-z0-9_-]{43}/i.test(input.unit)) {
+      if (output.unit === "AR" && output.amount) {
+        // Token -> AR.
+        const transaction = await this.arweave.createTransaction(
+          {
+            target: post,
+            data: Math.random().toString().slice(-4),
+          },
+          this.wallet
+        );
+
+        for (const { name, value } of [
+          { name: "Exchange", value: "Verto" },
+          { name: "Type", value: "Sell" },
+          { name: "Rate", value: (output.amount / input.amount).toString() },
+          { name: "App-Name", value: "SmartWeaveAction" },
+          { name: "App-Version", value: "0.3.0" },
+          { name: "Contract", value: input.unit },
+          {
+            name: "Input",
+            value: JSON.stringify({
+              function: "transfer",
+              target: post,
+              qty: Math.ceil(input.amount),
+            }),
+          },
+          ...(tags || []),
+        ]) {
+          transaction.addTag(name, value);
+        }
+
+        const tradingPostFee = await this.createTradingPostFee(
+          input.amount,
+          input.unit,
+          post
+        );
+        const vrtHolderFee = await this.createVRTHolderFee(
+          input.amount,
+          input.unit
+        );
+
+        return {
+          transactions: [
+            transaction,
+            tradingPostFee.transaction,
+            vrtHolderFee.transaction,
+          ],
+          cost: {
+            ar:
+              this.getTransactionFee(transaction) +
+              tradingPostFee.cost.ar +
+              vrtHolderFee.cost.ar,
+            token:
+              input.amount +
+              tradingPostFee.cost.token +
+              vrtHolderFee.cost.token,
+          },
+        };
+      } else {
+        // Unsupported.
+      }
+    } else {
+      // Unsupported.
+    }
+  }
+
   // === Trading Post Functions ===
 
   /**
@@ -277,6 +404,33 @@ export default class Verto {
     }
   }
 
+  /**
+   * Fetches the configuration for a specific trading post.
+   * @param address The trading post address.
+   * @returns An object containing the configuration, or undefined.
+   */
+  async getConfig(address: string): Promise<ConfigInterface | undefined> {
+    const gql = new ArDB(this.arweave);
+
+    const res = (await gql
+      .search()
+      .from(address)
+      .to(this.EXCHANGE_WALLET)
+      .tag("Exchange", "Verto")
+      .tag("Type", "Genesis")
+      .only("id")
+      .findOne()) as GQLEdgeTransactionInterface[];
+
+    if (res.length) {
+      const data = await this.arweave.transactions.getData(res[0].node.id, {
+        decode: true,
+        string: true,
+      });
+
+      return JSON.parse(data.toString());
+    }
+  }
+
   // =🔐= Private Functions =🔐=
 
   private getReputation(post: TradingPostInterface): number {
@@ -300,6 +454,142 @@ export default class Verto {
       }
     }
 
-    return "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
+    return this.EXCHANGE_WALLET;
+  }
+
+  private async createExchangeFee(amount: number): Promise<FeeInterface> {
+    const fee = amount * this.EXCHANGE_FEE;
+
+    const transaction = await this.arweave.createTransaction(
+      {
+        target: this.EXCHANGE_WALLET,
+        quantity: client.ar.arToWinston(fee.toString()),
+      },
+      this.wallet
+    );
+
+    transaction.addTag("Exchange", "Verto");
+    transaction.addTag("Type", "Fee-Exchange");
+
+    return {
+      transaction,
+      cost: { ar: fee + this.getTransactionFee(transaction), token: 0 },
+    };
+  }
+
+  private async createTradingPostFee(
+    amount: number,
+    token: string,
+    post: string
+  ): Promise<FeeInterface> {
+    const fee = Math.ceil(
+      Math.ceil(amount) * (await this.getConfig(post))?.tradeFee!
+    );
+
+    const transaction = await this.arweave.createTransaction(
+      {
+        target: post,
+        data: Math.random().toString().slice(-4),
+      },
+      this.wallet
+    );
+
+    const tags = {
+      Exchange: "Verto",
+      Type: "Fee-Trading-Post",
+      "App-Name": "SmartWeaveAction",
+      "App-Version": "0.3.0",
+      Contract: token,
+      Input: JSON.stringify({
+        function: "transfer",
+        target: post,
+        qty: fee,
+      }),
+    };
+    for (const [name, value] of Object.entries(tags)) {
+      transaction.addTag(name, value);
+    }
+
+    return {
+      transaction,
+      cost: { ar: this.getTransactionFee(transaction), token: fee },
+    };
+  }
+
+  private async createVRTHolderFee(
+    amount: number,
+    token: string
+  ): Promise<FeeInterface> {
+    const fee = Math.ceil(Math.ceil(amount) * this.EXCHANGE_FEE);
+    const target = await this.selectWeightedHolder();
+
+    const transaction = await this.arweave.createTransaction(
+      {
+        target,
+        data: Math.random().toString().slice(-4),
+      },
+      this.wallet
+    );
+
+    const tags = {
+      Exchange: "Verto",
+      Type: "Fee-VRT-Holder",
+      "App-Name": "SmartWeaveAction",
+      "App-Version": "0.3.0",
+      Contract: token,
+      Input: JSON.stringify({
+        function: "transfer",
+        target,
+        qty: fee,
+      }),
+    };
+    for (const [name, value] of Object.entries(tags)) {
+      transaction.addTag(name, value);
+    }
+
+    return {
+      transaction,
+      cost: { ar: this.getTransactionFee(transaction), token: fee },
+    };
+  }
+
+  private getTransactionFee(transaction: Transaction): number {
+    return parseFloat(this.arweave.ar.winstonToAr(transaction.reward));
+  }
+
+  private async selectWeightedHolder(): Promise<string> {
+    const res = await axios.get(
+      `${this.endpoint}/${this.EXCHANGE_CONTRACT}?filter=state.balances%20state.vault`
+    );
+
+    const state = res.data;
+    const balances: { [address: string]: number } = state.balances;
+    const vault: VaultInterface = state.vault;
+
+    let totalTokens = 0;
+    for (const addr of Object.keys(balances)) {
+      totalTokens += balances[addr];
+    }
+
+    for (const addr of Object.keys(vault)) {
+      if (!vault[addr].length) continue;
+
+      const vaultBalance = vault[addr]
+        .map((a) => a.balance)
+        .reduce((a, b) => a + b, 0);
+      totalTokens += vaultBalance;
+      if (addr in balances) {
+        balances[addr] += vaultBalance;
+      } else {
+        balances[addr] = vaultBalance;
+      }
+    }
+
+    const weighted: { [address: string]: number } = {};
+    for (const addr of Object.keys(balances)) {
+      weighted[addr] = balances[addr] / totalTokens;
+    }
+
+    return this.weightedRandom(weighted);
   }
 }

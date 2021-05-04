@@ -1,3 +1,5 @@
+import Transaction from "arweave/node/lib/transaction";
+
 // Community Interfaces
 
 export interface VaultInterface {
@@ -59,6 +61,21 @@ export interface PriceInterface {
   type?: "art" | "community" | "custom";
 }
 
+interface CostInterface {
+  ar: number;
+  token: number;
+}
+
+export interface SwapInterface {
+  transactions: Transaction[];
+  cost: CostInterface;
+}
+
+export interface FeeInterface {
+  transaction: Transaction;
+  cost: CostInterface;
+}
+
 // Trading Post Interfaces
 
 export interface TradingPostInterface {
@@ -78,4 +95,16 @@ export interface OrderBookInterface {
   createdAt: number;
   received: number;
   token?: string;
+}
+
+export interface ConfigInterface {
+  blockedTokens: string[];
+  chain: {
+    [identifier: string]: {
+      addr: string;
+    };
+  };
+  tradeFee: number;
+  publicURL: string;
+  version: string;
 }
