@@ -16,7 +16,11 @@ export interface UserInterface {
   username: string;
   name: string;
   addresses: string[];
-  image: string;
+  image?: string;
+  bio?: string;
+  links?: {
+    [identifier: string]: string;
+  };
 }
 
 export interface BalanceInterface {
