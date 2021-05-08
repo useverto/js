@@ -71,7 +71,7 @@ interface CostInterface {
 }
 
 export interface SwapInterface {
-  transactions: Transaction[];
+  transactions: { transaction: Transaction; type?: "fee" }[];
   cost: CostInterface;
 }
 

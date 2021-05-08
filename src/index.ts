@@ -269,7 +269,10 @@ export default class Verto {
         const fee = await this.createExchangeFee(input.amount);
 
         return {
-          transactions: [transaction, fee.transaction],
+          transactions: [
+            { transaction },
+            { transaction: fee.transaction, type: "fee" },
+          ],
           cost: {
             ar:
               input.amount + this.getTransactionFee(transaction) + fee.cost.ar,
@@ -322,9 +325,9 @@ export default class Verto {
 
         return {
           transactions: [
-            transaction,
-            tradingPostFee.transaction,
-            vrtHolderFee.transaction,
+            { transaction },
+            { transaction: tradingPostFee.transaction, type: "fee" },
+            { transaction: vrtHolderFee.transaction, type: "fee" },
           ],
           cost: {
             ar:
@@ -343,6 +346,27 @@ export default class Verto {
     } else {
       // Unsupported.
     }
+  }
+
+  /**
+   * Send a swap.
+   * @param input A list containing the different order transactions.
+   * @returns The transaction id of the swap.
+   */
+  async sendSwap(
+    order: { transaction: Transaction; type?: "fee" }[]
+  ): Promise<string> {
+    let res: string = "";
+
+    for (const item of order) {
+      await this.arweave.transactions.sign(item.transaction, this.wallet);
+      await this.arweave.transactions.post(item.transaction);
+
+      if (item.type !== "fee") res = item.transaction.id;
+    }
+
+    axios.post(`https://hook.verto.exchange/api/transaction?id=${res}`);
+    return res;
   }
 
   // === Trading Post Functions ===
