@@ -1,5 +1,8 @@
 import ArDB from "ardb";
-import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
+import {
+  GQLEdgeTransactionInterface,
+  GQLTransactionInterface,
+} from "ardb/lib/faces/gql";
 import Arweave from "arweave";
 import Transaction from "arweave/node/lib/transaction";
 import { JWKInterface } from "arweave/node/lib/wallet";
@@ -367,6 +370,37 @@ export default class Verto {
 
     axios.post(`https://hook.verto.exchange/api/transaction?id=${res}`);
     return res;
+  }
+
+  /**
+   * Cancel a swap.
+   * @param order The transaction id of the swap.
+   * @returns The transaction id of the cancel.
+   */
+  async cancel(order: string): Promise<string> {
+    const gql = new ArDB(this.arweave);
+    const res = (await gql
+      .search("transaction")
+      .id(order)
+      .only("recipient")
+      .findOne()) as GQLTransactionInterface;
+
+    const transaction = await this.arweave.createTransaction(
+      {
+        target: res.recipient,
+        data: Math.random().toString().slice(-4),
+      },
+      this.wallet
+    );
+
+    transaction.addTag("Exchange", "Verto");
+    transaction.addTag("Type", "Cancel");
+    transaction.addTag("Order", order);
+
+    await this.arweave.transactions.sign(transaction, this.wallet);
+    await this.arweave.transactions.post(transaction);
+
+    return transaction.id;
   }
 
   // === Trading Post Functions ===
