@@ -84,21 +84,40 @@ export default class Verto {
   /**
    * Fetches the latest transactions for a given wallet address.
    * @param address User wallet address.
+   * @param after Optional latest transaction id, used for pagination.
    * @returns List of transaction ids, statuses, amounts, & timestamps.
    */
-  async getTransactions(address: string): Promise<TransactionInterface[]> {
+  async getTransactions(
+    address: string,
+    after?: string
+  ): Promise<TransactionInterface[]> {
     const gql = new ArDB(this.arweave);
+    let inTxQuery = gql.search().to(address).limit(5);
+    let outTxQuery = gql.search().from(address).limit(5);
 
-    const inTxs = (await gql
-      .search()
-      .to(address)
-      .limit(5)
-      .find()) as GQLEdgeTransactionInterface[];
-    const outTxs = (await gql
-      .search()
-      .from(address)
-      .limit(5)
-      .find()) as GQLEdgeTransactionInterface[];
+    if (after) {
+      const tx = (await new ArDB(this.arweave)
+        .search()
+        .id(after)
+        .only(["block", "block.height"])
+        .findOne()) as GQLEdgeTransactionInterface[];
+
+      if (tx.length) {
+        inTxQuery = inTxQuery.max(tx[0].node.block.height);
+        outTxQuery = outTxQuery.max(tx[0].node.block.height);
+      }
+    }
+
+    let inTxs = (await inTxQuery.find()) as GQLEdgeTransactionInterface[];
+    let outTxs = (await outTxQuery.find()) as GQLEdgeTransactionInterface[];
+
+    if (after) {
+      const inIndex = inTxs.findIndex((tx) => tx.node.id === after);
+      const outIndex = outTxs.findIndex((tx) => tx.node.id === after);
+
+      if (inIndex > -1) inTxs = inTxs.slice(inIndex + 1);
+      if (outIndex > -1) outTxs = outTxs.slice(outIndex + 1);
+    }
 
     const res: TransactionInterface[] = [];
 
