@@ -122,6 +122,8 @@ export default class Verto {
     const res: TransactionInterface[] = [];
 
     for (const { node } of [...inTxs, ...outTxs]) {
+      if (res.find(({ id }) => id === node.id)) continue;
+
       const appName = node.tags.find((tag) => tag.name === "App-Name");
 
       let status;
