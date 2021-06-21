@@ -1,11 +1,14 @@
 {
   "name": "@verto/js",
-  "version": "0.0.0-alpha.16",
+  "version": "0.0.0-alpha.17",
   "author": "th8ta LLC",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist"
+  ],
   "main": "dist/index",
   "types": "dist/index",
   "scripts": {
