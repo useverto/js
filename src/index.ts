@@ -176,10 +176,11 @@ export default class Verto {
 
   /**
    * Fetches the tokens traded on Verto.
+   * @param listed If true, this only returns tokens that are listed on Verto.
    * @returns List of token ids, names, & tickers.
    */
-  async getTokens(): Promise<TokenInterface[]> {
-    const res = await axios.get(`${this.endpoint}/tokens`);
+  async getTokens(listed = false): Promise<TokenInterface[]> {
+    const res = await axios.get(`${this.endpoint}/tokens?listed=${listed}`);
     return res.data;
   }
 
