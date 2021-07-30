@@ -642,7 +642,7 @@ export default class Verto {
       `${this.endpoint}/${this.EXCHANGE_CONTRACT}?filter=state.balances%20state.vault`
     );
 
-    const state = res.data;
+    const { state } = res.data;
     const balances: { [address: string]: number } = state.balances;
     const vault: VaultInterface = state.vault;
 
