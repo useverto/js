@@ -36,6 +36,7 @@ export default class Verto {
   public endpoint = "https://v2.cache.verto.exchange";
   private EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
   private EXCHANGE_CONTRACT = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
+  private CLOB_CONTRACT = ""; // TODO
   private EXCHANGE_FEE = 0.005;
 
   /**
