@@ -7,7 +7,7 @@ import Arweave from "arweave";
 import Transaction from "arweave/node/lib/transaction";
 import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
-import { interactWrite } from "smartweave";
+import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import {
   BalanceInterface,
   ConfigInterface,
@@ -32,6 +32,7 @@ const client = new Arweave({
 export default class Verto {
   public arweave = client;
   public wallet: "use_wallet" | JWKInterface = "use_wallet";
+  public smartweave: SmartWeave;
 
   public endpoint = "https://v2.cache.verto.exchange";
   private EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
@@ -47,6 +48,8 @@ export default class Verto {
   constructor(arweave?: Arweave, wallet?: JWKInterface) {
     if (arweave) this.arweave = arweave;
     if (wallet) this.wallet = wallet;
+
+    this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
   }
 
   // === User Functions ===
@@ -232,22 +235,22 @@ export default class Verto {
    * @param target The receiving address.
    * @returns The transaction id of the transfer.
    */
-  async transfer(amount: number, id: string, target: string): Promise<string> {
-    const transaction = await interactWrite(
-      this.arweave,
-      this.wallet,
-      id,
-      {
-        function: "transfer",
-        target,
-        qty: amount,
-      },
-      [
-        { name: "Exchange", value: "Verto" },
-        { name: "Action", value: "Transfer" },
-      ],
-      target
-    );
+  async transfer(amount: number, id: string, target: string) {
+    const contract = this.smartweave.contract(id).connect(this.wallet);
+    const transaction = contract.writeInteraction({
+      function: "transfer",
+      target,
+      qty: amount,
+    },
+    [
+      { name: "Exchange", value: "Verto" },
+      { name: "Action", value: "Transfer" },
+    ],
+    {
+      target,
+      winstonQty: "0"
+    }
+    )
 
     return transaction;
   }
