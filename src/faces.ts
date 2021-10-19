@@ -65,21 +65,6 @@ export interface PriceInterface {
   type?: "art" | "community" | "custom";
 }
 
-interface CostInterface {
-  ar: number;
-  token: number;
-}
-
-export interface SwapInterface {
-  transactions: { transaction: Transaction; type?: "fee" }[];
-  cost: CostInterface;
-}
-
-export interface FeeInterface {
-  transaction: Transaction;
-  cost: CostInterface;
-}
-
 // Trading Post Interfaces
 
 export interface TradingPostInterface {
