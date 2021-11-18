@@ -8,12 +8,20 @@ import { JWKInterface } from "arweave/node/lib/wallet";
 import axios from "axios";
 import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import {
+  CommunityContractToken,
+  fetchContract,
+  fetchTokens,
+  fetchTokenStateMetadata,
+} from "verto-cache-interface";
+import {
   BalanceInterface,
-  ConfigInterface,
+  DecodedTag,
   OrderBookInterface,
   OrderInterface,
   PriceInterface,
   TokenInterface,
+  TokenPair,
+  TokenType,
   TradingPostInterface,
   TransactionInterface,
   UserInterface,
@@ -30,11 +38,13 @@ export default class Verto {
   public arweave = client;
   public wallet: "use_wallet" | JWKInterface = "use_wallet";
   public smartweave: SmartWeave;
+  public cache: boolean;
 
   public endpoint = "https://v2.cache.verto.exchange";
   private EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
   private EXCHANGE_CONTRACT = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
   private CLOB_CONTRACT = ""; // TODO
+  private COMMUNITY_CONTRACT = "t9T7DIOGxx4VWXoCEeYYarFYeERTpWIC1V3y-BPZgKE";
   private EXCHANGE_FEE = 0.005;
 
   /**
@@ -42,10 +52,11 @@ export default class Verto {
    * @param arweave An optional Arweave instance.
    * @param wallet An optional Arweave keyfile.
    */
-  constructor(arweave?: Arweave, wallet?: JWKInterface) {
+  constructor(arweave?: Arweave, wallet?: JWKInterface, cache: boolean = true) {
     if (arweave) this.arweave = arweave;
     if (wallet) this.wallet = wallet;
 
+    this.cache = cache;
     this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
   }
 
@@ -177,12 +188,42 @@ export default class Verto {
 
   /**
    * Fetches the tokens traded on Verto.
-   * @param listed If true, this only returns tokens that are listed on Verto.
    * @returns List of token ids, names, & tickers.
    */
-  async getTokens(listed = false): Promise<TokenInterface[]> {
-    const res = await axios.get(`${this.endpoint}/tokens?listed=${listed}`);
-    return res.data;
+  async getTokens(type?: TokenType): Promise<TokenInterface[]> {
+    let tokens: CommunityContractToken[] = [];
+    const parsedTokens: TokenInterface[] = [];
+
+    if (this.cache) tokens = await fetchTokens(type);
+    else {
+      const contract = await this.getState(this.COMMUNITY_CONTRACT);
+
+      tokens = contract.tokens;
+    }
+
+    for (const token of tokens) {
+      if (this.cache) {
+        const data = await fetchTokenStateMetadata(token.id);
+
+        if (!data) continue;
+        parsedTokens.push({
+          id: data.id,
+          name: data.name,
+          ticker: data.ticker,
+        });
+      } else {
+        const data = await this.getState(token.id);
+
+        if (!data) continue;
+        parsedTokens.push({
+          id: token.id,
+          name: data.name,
+          ticker: data.ticker,
+        });
+      }
+    }
+
+    return parsedTokens;
   }
 
   /**
@@ -261,6 +302,77 @@ export default class Verto {
   }
 
   /**
+   * List a new token on the exchange.
+   * @param address The ID of the token
+   * @returns InteractionID
+   */
+  async list(address: string, type: TokenType, tags: DecodedTag[] = []): Promise<string> {
+    const contract = this.smartweave
+      .contract(this.COMMUNITY_CONTRACT)
+      .connect(this.wallet);
+
+    if(!this.validateHash(address)) throw new Error("Invalid token address.");
+
+    // TODO: do we want fees on this @t8
+    const interactionID = await contract.writeInteraction({
+      function: "list",
+      id: address,
+      type
+    }, [
+      {
+        name: "Exchange",
+        value: "Verto",
+      },
+      {
+        name: "Action",
+        value: "ListToken",
+      },
+      ...tags
+    ]);
+
+    if (!interactionID) throw new Error("Could not list token.");
+
+    return interactionID;
+  }
+
+  /**
+   * Add a new pair to the exchange.
+   * @param pair A tuple of two token IDs
+   * @returns InteractionID
+   */
+  async addPair(pair: TokenPair, tags: DecodedTag[] = []): Promise<string> {
+    const contract = this.smartweave
+      .contract(this.CLOB_CONTRACT)
+      .connect(this.wallet);
+
+    if (pair.length !== 2) throw new Error("Invalid pair. Length should be 2.");
+
+    pair.forEach((hash) => {
+      if (!this.validateHash(hash)) throw new Error(`Invalid token address in pair "${hash}".`);
+    });
+
+    // TODO: do we want fees on this @t8
+    const interactionID = await contract.writeInteraction({
+      function: "addPair",
+      pair
+    }, [
+      {
+        name: "Exchange",
+        value: "Verto",
+      },
+      {
+        name: "Action",
+        value: "AddPair",
+      },
+      ...tags
+    ]);
+
+    if (!interactionID) throw new Error("Could not add pair.");
+
+    return interactionID;
+  }
+
+  /**
    * Create a swap.
    * @param pair The two tokens to trade between. Must be an existing pair.
    * @param amount The amount of tokens sent to the contract.
@@ -275,7 +387,7 @@ export default class Verto {
     },
     amount: number,
     price?: number,
-    tags: { name: string; value: string }[] = []
+    tags: DecodedTag[] = []
   ): Promise<string> {
     // Validate hashes
     if (!/[a-z0-9_-]{43}/i.test(pair.from) || !/[a-z0-9_-]{43}/i.test(pair.to))
@@ -360,39 +472,7 @@ export default class Verto {
     return transaction.id;
   }
 
-  // === Trading Post Functions ===
-
-  /**
-   * Fetches the currently staked trading posts.
-   * @returns List of trading post addresses, balances, & stakes.
-   */
-  async getTradingPosts(): Promise<TradingPostInterface[]> {
-    const res = await axios.get(`${this.endpoint}/posts`);
-    return res.data;
-  }
-
-  /**
-   * Recommends a random trading post based on it's reputation.
-   * @returns The address of the selected trading post.
-   */
-  async recommendPost(): Promise<string> {
-    const posts = await this.getTradingPosts();
-
-    const reputations: { [address: string]: number } = {};
-    let total = 0;
-    for (const post of posts) {
-      const reputation = this.getReputation(post);
-      reputations[post.address] = reputation;
-      total += reputation;
-    }
-
-    const normalised: { [address: string]: number } = {};
-    for (const post of posts) {
-      normalised[post.address] = reputations[post.address] / total;
-    }
-
-    return this.weightedRandom(normalised);
-  }
+  // TODO: implement cache and switch to clob contract
 
   /**
    * Fetches the order book for a specific trading post and token.
@@ -419,44 +499,7 @@ export default class Verto {
     }
   }
 
-  /**
-   * Fetches the configuration for a specific trading post.
-   * @param address The trading post address.
-   * @returns An object containing the configuration, or undefined.
-   */
-  async getConfig(address: string): Promise<ConfigInterface | undefined> {
-    const gql = new ArDB(this.arweave);
-
-    const res = (await gql
-      .search()
-      .from(address)
-      .to(this.EXCHANGE_WALLET)
-      .tag("Exchange", "Verto")
-      .tag("Type", "Genesis")
-      .only("id")
-      .findOne()) as GQLEdgeTransactionInterface[];
-
-    if (res.length) {
-      const data = await this.arweave.transactions.getData(res[0].node.id, {
-        decode: true,
-        string: true,
-      });
-
-      return JSON.parse(data.toString());
-    }
-  }
-
   // =🔐= Private Functions =🔐=
-
-  private getReputation(post: TradingPostInterface): number {
-    const stakeWeighted = post.stake / 2;
-    const timeStakedWeighted = post.time / 3;
-    const balanceWeighted = post.balance / 6;
-
-    return parseFloat(
-      (stakeWeighted + timeStakedWeighted + balanceWeighted).toFixed(3)
-    );
-  }
 
   private weightedRandom(input: { [key: string]: number }): string {
     let sum = 0;
@@ -547,5 +590,23 @@ export default class Verto {
     }
 
     return this.weightedRandom(weighted);
+  }
+
+  /**
+   * Get the state of a contract
+   * @param addr Address of the contract
+   * @returns Contract state
+   */
+  private async getState(addr: string) {
+    if (this.cache) return (await fetchContract(addr))?.state;
+    else {
+      const contract = this.smartweave.contract(addr).connect(this.wallet);
+
+      return (await contract.readState()).state;
+    }
+  }
+
+  private validateHash(hash: string) {
+    return /[a-z0-9_-]{43}/i.test(hash);
   }
 }

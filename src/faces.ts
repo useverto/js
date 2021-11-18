@@ -62,7 +62,7 @@ export interface PriceInterface {
   price: number;
   name: string;
   ticker: string;
-  type?: "art" | "community" | "custom";
+  type?: TokenType;
 }
 
 // Trading Post Interfaces
@@ -86,14 +86,11 @@ export interface OrderBookInterface {
   token?: string;
 }
 
-export interface ConfigInterface {
-  blockedTokens: string[];
-  chain: {
-    [identifier: string]: {
-      addr: string;
-    };
-  };
-  tradeFee: number;
-  publicURL: string;
-  version: string;
+export type TokenType = "art" | "community" | "custom";
+
+export type TokenPair = [string, string];
+
+export interface DecodedTag {
+  name: string;
+  value: string
 }

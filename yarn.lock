@@ -86,6 +86,13 @@ axios@^0.22.0:
   dependencies:
     follow-redirects "^1.14.4"
 
+axios@^0.23.0:
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.23.0.tgz#b0fa5d0948a8d1d75e3d5635238b6c4625b05149"
+  integrity sha512-NmvAE4i0YAv5cKq8zlDoPd1VLKAqX5oLuZKs8xkJa4qi6RGn0uhCYFjWtHHC9EM/MwOwYWOs53W+V0aqEXq1sg==
+  dependencies:
+    follow-redirects "^1.14.4"
+
 base64-js@^1.3.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
@@ -199,3 +206,10 @@ typescript@^4.2.3:
   version "4.2.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.2.4.tgz#8610b59747de028fda898a8aef0e103f156d0961"
   integrity sha512-V+evlYHZnQkaz8TRBuxTA92yZBPotr5H+WhQ7bD3hZUndx5tGOa1fuCgeSjxAzM1RiN5IzvadIXTVefuuwZCRg==
+
+verto-cache-interface@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/verto-cache-interface/-/verto-cache-interface-1.0.6.tgz#a2ef35e0fcfba11c93c03f5c3c4dfd89176e9f8f"
+  integrity sha512-IEIe946wZ4niSNC352YMrKCNC0Va5UasMqNRWvT5qaalijxgeeuijp01IkPcbIr6zn2qSIaf8Eo1gDpeGnUuAw==
+  dependencies:
+    axios "^0.23.0"
