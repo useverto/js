@@ -9,8 +9,12 @@ import axios from "axios";
 import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import {
   CommunityContractToken,
+  CommunityContractPeople,
+  UserBalance,
   fetchContract,
   fetchTokens,
+  fetchUsers,
+  fetchBalancesForAddress,
   fetchTokenStateMetadata,
 } from "verto-cache-interface";
 import {
@@ -68,9 +72,20 @@ export default class Verto {
    * @returns The user's data such as name & image, or undefined.
    */
   async getUser(input: string): Promise<UserInterface | undefined> {
-    const res = await axios.get(`${this.endpoint}/user/${input}`);
-    if (res.data === "Not Found") return undefined;
-    return res.data;
+    let allUsers: CommunityContractPeople[];
+
+    if (this.cache) allUsers = await fetchUsers();
+    else {
+      const contract = await this.getState(this.COMMUNITY_CONTRACT);
+      allUsers = contract.people;
+    }
+
+    for (const user of allUsers) {
+      if (user.username === input || user.addresses.includes(input)) {
+        return user;
+      }
+      return undefined;
+    }
   }
 
   /**
@@ -78,9 +93,9 @@ export default class Verto {
    * @param address User wallet address.
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
-  async getBalances(address: string): Promise<BalanceInterface[]> {
-    const res = await axios.get(`${this.endpoint}/user/${address}/balances`);
-    return res.data;
+  async getBalances(address: string): Promise<UserBalance[]> {
+    const balances: UserBalance[] = await fetchBalancesForAddress(address);
+    return balances;
   }
 
   /**
@@ -447,29 +462,25 @@ export default class Verto {
    * @returns The transaction id of the cancel.
    */
   async cancel(order: string): Promise<string> {
-    const gql = new ArDB(this.arweave);
-    const res = (await gql
-      .search("transaction")
-      .id(order)
-      .only("recipient")
-      .findOne()) as GQLTransactionInterface;
+    const contract = this.smartweave.contract(this.COMMUNITY_CONTRACT).connect(this.wallet);
 
-    const transaction = await this.arweave.createTransaction(
+    const transactionID = await contract.writeInteraction({
+      function: 'cancelOrder',
+      order
+    }, [
       {
-        target: res.recipient,
-        data: Math.random().toString().slice(-4),
+        name: 'Exchange',
+        value: 'Verto',
       },
-      this.wallet
-    );
+      {
+        name: 'Action',
+        value: 'cancelOrder',
+      }
+    ]);
 
-    transaction.addTag("Exchange", "Verto");
-    transaction.addTag("Type", "Cancel");
-    transaction.addTag("Order", order);
+    if (!transactionID) throw new Error("Order could not be cancelled");
 
-    await this.arweave.transactions.sign(transaction, this.wallet);
-    await this.arweave.transactions.post(transaction);
-
-    return transaction.id;
+    return transactionID;
   }
 
   // TODO: implement cache and switch to clob contract
@@ -608,5 +619,9 @@ export default class Verto {
 
   private validateHash(hash: string) {
     return /[a-z0-9_-]{43}/i.test(hash);
+  }
+
+  private async mine() {
+    await this.arweave.api.get("mine");
   }
 }
