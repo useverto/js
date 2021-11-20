@@ -80,7 +80,9 @@ export default class Verto {
       allUsers = contract.people;
     }
 
-    return allUsers.find((user) => user.username === input || user.addresses.includes(input));
+    return allUsers.find(
+      (user) => user.username === input || user.addresses.includes(input)
+    );
   }
 
   /**
@@ -316,29 +318,36 @@ export default class Verto {
    * @param address The ID of the token
    * @returns InteractionID
    */
-  async list(address: string, type: TokenType, tags: DecodedTag[] = []): Promise<string> {
+  async list(
+    address: string,
+    type: TokenType,
+    tags: DecodedTag[] = []
+  ): Promise<string> {
     const contract = this.smartweave
       .contract(this.COMMUNITY_CONTRACT)
       .connect(this.wallet);
 
-    if(!this.validateHash(address)) throw new Error("Invalid token address.");
+    if (!this.validateHash(address)) throw new Error("Invalid token address.");
 
     // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction({
-      function: "list",
-      id: address,
-      type
-    }, [
+    const interactionID = await contract.writeInteraction(
       {
-        name: "Exchange",
-        value: "Verto",
+        function: "list",
+        id: address,
+        type,
       },
-      {
-        name: "Action",
-        value: "ListToken",
-      },
-      ...tags
-    ]);
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "ListToken",
+        },
+        ...tags,
+      ]
+    );
 
     if (!interactionID) throw new Error("Could not list token.");
 
@@ -358,24 +367,28 @@ export default class Verto {
     if (pair.length !== 2) throw new Error("Invalid pair. Length should be 2.");
 
     pair.forEach((hash) => {
-      if (!this.validateHash(hash)) throw new Error(`Invalid token address in pair "${hash}".`);
+      if (!this.validateHash(hash))
+        throw new Error(`Invalid token address in pair "${hash}".`);
     });
 
     // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction({
-      function: "addPair",
-      pair
-    }, [
+    const interactionID = await contract.writeInteraction(
       {
-        name: "Exchange",
-        value: "Verto",
+        function: "addPair",
+        pair,
       },
-      {
-        name: "Action",
-        value: "AddPair",
-      },
-      ...tags
-    ]);
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "AddPair",
+        },
+        ...tags,
+      ]
+    );
 
     if (!interactionID) throw new Error("Could not add pair.");
 
@@ -457,21 +470,26 @@ export default class Verto {
    * @returns The transaction id of the cancel.
    */
   async cancel(order: string): Promise<string> {
-    const contract = this.smartweave.contract(this.COMMUNITY_CONTRACT).connect(this.wallet);
+    const contract = this.smartweave
+      .contract(this.COMMUNITY_CONTRACT)
+      .connect(this.wallet);
 
-    const transactionID = await contract.writeInteraction({
-      function: 'cancelOrder',
-      order
-    }, [
+    const transactionID = await contract.writeInteraction(
       {
-        name: 'Exchange',
-        value: 'Verto',
+        function: "cancelOrder",
+        order,
       },
-      {
-        name: 'Action',
-        value: 'cancelOrder',
-      }
-    ]);
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "cancelOrder",
+        },
+      ]
+    );
 
     if (!transactionID) throw new Error("Order could not be cancelled");
 
