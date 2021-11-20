@@ -1,5 +1,7 @@
 import {
+  CommunityContractState,
   CommunityContractToken,
+  fetchTokenMetadata,
   fetchTokens,
   fetchTokenStateMetadata,
   TokenMetadata,
@@ -92,17 +94,27 @@ export default class Token {
     return parsedTokens;
   }
 
-  // TODO
   /**
    * Fetches the type for a given token.
    * @param id Token contract id.
    * @returns The type of the token.
    */
-  /*async getTokenType(id: string): Promise<TokenType> {
+  async getTokenType(id: string): Promise<TokenType | undefined> {
     if (this.cache) {
+      const tokenMetadata = await fetchTokenMetadata(id);
 
-    } 
-  }*/
+      return tokenMetadata?.type as TokenType;
+    } else {
+      const communityContractState = await this.utils.getState<CommunityContractState>(
+        this.utils.COMMUNITY_CONTRACT
+      );
+      const token = communityContractState.tokens.find(
+        (listedToken) => listedToken.id === id
+      );
+
+      return token?.type as TokenType;
+    }
+  }
 
   /**
    * Fetches the latest price for a given token.
