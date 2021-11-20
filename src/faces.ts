@@ -1,4 +1,4 @@
-import Transaction from "arweave/node/lib/transaction";
+import { JWKInterface } from "arweave/node/lib/wallet"
 
 // Community Interfaces
 
@@ -94,3 +94,5 @@ export interface DecodedTag {
   name: string;
   value: string;
 }
+
+export type ExtensionOrJWK = "use_wallet" | JWKInterface;

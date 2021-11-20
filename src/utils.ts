@@ -1,13 +1,12 @@
-import { JWKInterface } from "arweave/node/lib/wallet";
 import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
-import { VaultInterface } from "./faces";
+import { ExtensionOrJWK, VaultInterface } from "./faces";
 import Arweave from "arweave";
 import axios from "axios";
 
 export default class Utils {
   private arweave: Arweave;
-  private wallet: "use_wallet" | JWKInterface = "use_wallet";
+  private wallet: ExtensionOrJWK;
   private smartweave: SmartWeave;
   private cache: boolean;
 
@@ -27,7 +26,7 @@ export default class Utils {
    */
   constructor(
     arweave: Arweave,
-    wallet: "use_wallet" | JWKInterface,
+    wallet: ExtensionOrJWK,
     cache: boolean,
     smartweave: SmartWeave
   ) {
