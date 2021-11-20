@@ -466,10 +466,10 @@ export default class Verto {
 
   /**
    * Cancel a swap.
-   * @param order The transaction id of the swap.
+   * @param orderID The transaction id of the swap.
    * @returns The transaction id of the cancel.
    */
-  async cancel(order: string): Promise<string> {
+  async cancel(orderID: string): Promise<string> {
     const contract = this.smartweave
       .contract(this.CLOB_CONTRACT)
       .connect(this.wallet);
@@ -477,7 +477,7 @@ export default class Verto {
     const transactionID = await contract.writeInteraction(
       {
         function: "cancelOrder",
-        order,
+        orderID,
       },
       [
         {
