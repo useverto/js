@@ -80,12 +80,7 @@ export default class Verto {
       allUsers = contract.people;
     }
 
-    for (const user of allUsers) {
-      if (user.username === input || user.addresses.includes(input)) {
-        return user;
-      }
-      return undefined;
-    }
+    return allUsers.find((user) => user.username === input || user.addresses.includes(input));
   }
 
   /**
