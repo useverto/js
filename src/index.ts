@@ -39,7 +39,6 @@ export default class Verto {
     if (wallet) this.wallet = wallet;
 
     this.cache = cache;
-    // @ts-expect-error
     this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
 
     // Submodules
