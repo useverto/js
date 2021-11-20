@@ -1,4 +1,4 @@
-import { JWKInterface } from "arweave/node/lib/wallet"
+import { JWKInterface } from "arweave/node/lib/wallet";
 
 // Community Interfaces
 

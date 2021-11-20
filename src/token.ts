@@ -2,6 +2,7 @@ import {
   CommunityContractToken,
   fetchTokens,
   fetchTokenStateMetadata,
+  TokenMetadata,
 } from "verto-cache-interface";
 import {
   DecodedTag,
@@ -10,7 +11,7 @@ import {
   TokenInterface,
   TokenType,
 } from "./faces";
-import { SmartWeave } from "redstone-smartweave"
+import { SmartWeave } from "redstone-smartweave";
 import Arweave from "arweave";
 import axios from "axios";
 import Utils from "./utils";
@@ -30,7 +31,13 @@ export default class Token {
    * @param smartweave SmartWeave instance.
    * @param utils Utils submodule.
    */
-  constructor(arweave: Arweave, wallet: ExtensionOrJWK, cache: boolean, smartweave: SmartWeave, utils: Utils) {
+  constructor(
+    arweave: Arweave,
+    wallet: ExtensionOrJWK,
+    cache: boolean,
+    smartweave: SmartWeave,
+    utils: Utils
+  ) {
     this.arweave = arweave;
     this.wallet = wallet;
     this.cache = cache;
@@ -42,7 +49,7 @@ export default class Token {
    * Fetches the tokens listed on Verto.
    * @returns List of token ids, names, & tickers.
    */
-   async getTokens(type?: TokenType): Promise<TokenInterface[]> {
+  async getTokens(type?: TokenType): Promise<TokenInterface[]> {
     let tokens: CommunityContractToken[] = [];
     const parsedTokens: TokenInterface[] = [];
 
@@ -50,7 +57,14 @@ export default class Token {
     else {
       const contract = await this.utils.getState(this.utils.COMMUNITY_CONTRACT);
 
-      tokens = contract.tokens;
+      if (type) {
+        tokens = contract.tokens.filter(
+          (listedToken: Omit<TokenMetadata, "contractId">) =>
+            listedToken.type === type
+        );
+      } else {
+        tokens = contract.tokens;
+      }
     }
 
     for (const token of tokens) {
@@ -106,7 +120,9 @@ export default class Token {
    * @returns Dates mapped to prices.
    */
   async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
-    const res = await axios.get(`${this.utils.endpoint}/token/${id}/priceHistory`);
+    const res = await axios.get(
+      `${this.utils.endpoint}/token/${id}/priceHistory`
+    );
     return res.data;
   }
 
@@ -126,7 +142,9 @@ export default class Token {
    * @returns Dates mapped to volumes.
    */
   async getVolumeHistory(id: string): Promise<{ [date: string]: number }> {
-    const res = await axios.get(`${this.utils.endpoint}/token/${id}/volumeHistory`);
+    const res = await axios.get(
+      `${this.utils.endpoint}/token/${id}/volumeHistory`
+    );
     return res.data;
   }
 
@@ -179,7 +197,8 @@ export default class Token {
       .contract(this.utils.COMMUNITY_CONTRACT)
       .connect(this.wallet);
 
-    if (!this.utils.validateHash(address)) throw new Error("Invalid token address.");
+    if (!this.utils.validateHash(address))
+      throw new Error("Invalid token address.");
 
     // TODO: do we want fees on this @t8
     const interactionID = await contract.writeInteraction(

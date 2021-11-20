@@ -10,22 +10,26 @@ import ArDB from "ardb";
 import Arweave from "arweave";
 import axios from "axios";
 import Utils from "./utils";
+import Token from "./token";
 
 export default class User {
   private arweave: Arweave;
   private cache: boolean;
   private utils: Utils;
+  private token: Token;
 
   /**
    *
    * @param arweave Arweave instance.
    * @param cache Use the Verto cache.
    * @param utils Utils submodule.
+   * @param token Token submodule.
    */
-  constructor(arweave: Arweave, cache: boolean, utils: Utils) {
+  constructor(arweave: Arweave, cache: boolean, utils: Utils, token: Token) {
     this.arweave = arweave;
     this.cache = cache;
     this.utils = utils;
+    this.token = token;
   }
 
   /**
@@ -55,8 +59,7 @@ export default class User {
   async getBalances(address: string): Promise<UserBalance[]> {
     if (!this.cache) {
       const balances: UserBalance[] = [];
-      // TODO
-      const listedTokens = await this.getTokens();
+      const listedTokens = await this.token.getTokens();
 
       for (const token of listedTokens) {
         const tokenState = await this.utils.getState(token.id);
