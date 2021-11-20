@@ -1,4 +1,3 @@
-import { JWKInterface } from "arweave/node/lib/wallet";
 import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import { ExtensionOrJWK } from "./faces";
 import Arweave from "arweave";
@@ -34,7 +33,11 @@ export default class Verto {
    * @param wallet An optional Arweave keyfile.
    * @param cache Use the Verto cache.
    */
-  constructor(arweave?: Arweave, wallet?: JWKInterface, cache: boolean = true) {
+  constructor(
+    arweave?: Arweave,
+    wallet?: ExtensionOrJWK,
+    cache: boolean = true
+  ) {
     if (arweave) this.arweave = arweave;
     if (wallet) this.wallet = wallet;
 
