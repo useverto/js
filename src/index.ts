@@ -31,6 +31,8 @@ import {
   UserInterface,
   VaultInterface,
 } from "./faces";
+import Utils from "./utils";
+import User from "./user";
 
 const client = new Arweave({
   host: "arweave.net",
@@ -44,17 +46,15 @@ export default class Verto {
   public smartweave: SmartWeave;
   public cache: boolean;
 
-  public endpoint = "https://v2.cache.verto.exchange";
-  private EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
-  private EXCHANGE_CONTRACT = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
-  private CLOB_CONTRACT = ""; // TODO
-  private COMMUNITY_CONTRACT = "t9T7DIOGxx4VWXoCEeYYarFYeERTpWIC1V3y-BPZgKE";
-  private EXCHANGE_FEE = 0.005;
+  // Submodules
+  private utils: Utils;
+  public user: User;
 
   /**
    *
    * @param arweave An optional Arweave instance.
    * @param wallet An optional Arweave keyfile.
+   * @param cache Use the Verto cache.
    */
   constructor(arweave?: Arweave, wallet?: JWKInterface, cache: boolean = true) {
     if (arweave) this.arweave = arweave;
@@ -62,157 +62,10 @@ export default class Verto {
 
     this.cache = cache;
     this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
-  }
 
-  // === User Functions ===
-
-  /**
-   * Fetches the user info for a given wallet address or username.
-   * @param input User wallet address or username.
-   * @returns The user's data such as name & image, or undefined.
-   */
-  async getUser(input: string): Promise<UserInterface | undefined> {
-    let allUsers: CommunityContractPeople[];
-
-    if (this.cache) allUsers = await fetchUsers();
-    else {
-      const contract = await this.getState(this.COMMUNITY_CONTRACT);
-      allUsers = contract.people;
-    }
-
-    return allUsers.find(
-      (user) => user.username === input || user.addresses.includes(input)
-    );
-  }
-
-  /**
-   * Fetches the assets (listed on Verto) for a given wallet address.
-   * @param address User wallet address.
-   * @returns List of asset ids, balances, names, tickers, & logos.
-   */
-  async getBalances(address: string): Promise<UserBalance[]> {
-    if (!this.cache) {
-      const balances: UserBalance[] = [];
-      const listedTokens = await this.getTokens();
-
-      for (const token of listedTokens) {
-        const tokenState = await this.getState(token.id);
-
-        if (tokenState?.balances?.[address]) {
-          balances.push({
-            contractId: token.id,
-            name: token.name,
-            ticker: token.ticker,
-            logo: this.getPSTSettingValue("communityLogo", tokenState),
-            balance: tokenState.balances[address],
-            userAddress: address
-          });
-        }
-      }
-
-      return balances;
-    } else return await fetchBalancesForAddress(address);
-  }
-
-  /**
-   * Fetches the orders for a given wallet address.
-   * @param address User wallet address.
-   * @returns List of order ids, statuses, inputs, outputs, & timestamps.
-   */
-  async getOrders(address: string): Promise<OrderInterface[]> {
-    const res = await axios.get(`${this.endpoint}/user/${address}/orders`);
-    return res.data;
-  }
-
-  /**
-   * Fetches the latest transactions for a given wallet address.
-   * @param address User wallet address.
-   * @param after Optional latest transaction id, used for pagination.
-   * @returns List of transaction ids, statuses, amounts, & timestamps.
-   */
-  async getTransactions(
-    address: string,
-    after?: string
-  ): Promise<TransactionInterface[]> {
-    const gql = new ArDB(this.arweave);
-    let inTxQuery = gql.search().to(address).limit(5);
-    let outTxQuery = gql.search().from(address).limit(5);
-
-    if (after) {
-      const tx = (await new ArDB(this.arweave)
-        .search()
-        .id(after)
-        .only(["block", "block.height"])
-        .findOne()) as GQLEdgeTransactionInterface[];
-
-      if (tx.length) {
-        inTxQuery = inTxQuery.max(tx[0].node.block.height);
-        outTxQuery = outTxQuery.max(tx[0].node.block.height);
-      }
-    }
-
-    let inTxs = (await inTxQuery.find()) as GQLEdgeTransactionInterface[];
-    let outTxs = (await outTxQuery.find()) as GQLEdgeTransactionInterface[];
-
-    if (after) {
-      const inIndex = inTxs.findIndex((tx) => tx.node.id === after);
-      const outIndex = outTxs.findIndex((tx) => tx.node.id === after);
-
-      if (inIndex > -1) inTxs = inTxs.slice(inIndex + 1);
-      if (outIndex > -1) outTxs = outTxs.slice(outIndex + 1);
-    }
-
-    const res: TransactionInterface[] = [];
-
-    for (const { node } of [...inTxs, ...outTxs]) {
-      if (res.find(({ id }) => id === node.id)) continue;
-
-      const appName = node.tags.find((tag) => tag.name === "App-Name");
-
-      let status;
-      let amount;
-      if (appName && appName.value === "SmartWeaveAction") {
-        const input = node.tags.find((tag) => tag.name === "Input");
-
-        if (input) {
-          const parsedInput = JSON.parse(input.value);
-
-          if (parsedInput.function === "transfer" && parsedInput.qty) {
-            const { data: contract } = await axios.get(
-              `${this.endpoint}/${
-                node.tags.find((tag) => tag.name === "Contract")?.value
-              }?filter=state.ticker%20validity.${node.id}`
-            );
-
-            amount = `${parsedInput.qty} ${
-              contract.state ? contract.state.ticker : "???"
-            }`;
-
-            if (contract.validity && contract.validity[node.id] === false)
-              status = "error";
-          }
-        }
-      }
-
-      res.push({
-        id: node.id,
-        // @ts-ignore
-        status: node.block ? status || "success" : "pending",
-        type: node.owner.address === address ? "out" : "in",
-        amount: amount || `${parseFloat(node.quantity.ar)} AR`,
-        timestamp: node.block && node.block.timestamp,
-      });
-    }
-
-    return res
-      .sort(
-        (a, b) =>
-          (b.timestamp ||
-            parseFloat(new Date().getTime().toString().substring(0, 10))) -
-          (a.timestamp ||
-            parseFloat(new Date().getTime().toString().substring(0, 10)))
-      )
-      .slice(0, 5);
+    // Submodules
+    this.utils = new Utils(this.arweave, this.wallet, this.cache, this.smartweave);
+    this.user = new User(this.arweave, this.cache, this.utils);
   }
 
   // === Token Functions ===
@@ -552,132 +405,5 @@ export default class Verto {
     } else {
       return [];
     }
-  }
-
-  // =🔐= Private Functions =🔐=
-
-  private weightedRandom(input: { [key: string]: number }): string {
-    let sum = 0;
-    const r = Math.random();
-
-    for (const key of Object.keys(input)) {
-      sum += input[key];
-      if (r <= sum && input[key] > 0) {
-        return key;
-      }
-    }
-
-    return this.EXCHANGE_WALLET;
-  }
-
-  private async createFee(
-    amount: number,
-    token: string,
-    orderID: string,
-    feeTarget: "exchange" | "token_holder"
-  ) {
-    const fee = Math.ceil(Math.ceil(amount) * this.EXCHANGE_FEE);
-    const target =
-      feeTarget === "exchange"
-        ? this.EXCHANGE_WALLET
-        : await this.selectWeightedHolder();
-
-    const transaction = await this.arweave.createTransaction(
-      {
-        target,
-        data: Math.random().toString().slice(-4),
-      },
-      this.wallet
-    );
-
-    const tags = {
-      Exchange: "Verto",
-      Type: "Fee-VRT-Holder",
-      Order: orderID,
-      "App-Name": "SmartWeaveAction",
-      "App-Version": "0.3.0",
-      Contract: token,
-      Input: JSON.stringify({
-        function: "transfer",
-        target,
-        qty: fee,
-      }),
-    };
-    for (const [name, value] of Object.entries(tags)) {
-      transaction.addTag(name, value);
-    }
-
-    await this.arweave.transactions.sign(transaction, this.wallet);
-    await this.arweave.transactions.post(transaction);
-  }
-
-  private async selectWeightedHolder(): Promise<string> {
-    const res = await axios.get(
-      `${this.endpoint}/${this.EXCHANGE_CONTRACT}?filter=state.balances%20state.vault`
-    );
-
-    const { state } = res.data;
-    const balances: { [address: string]: number } = state.balances;
-    const vault: VaultInterface = state.vault;
-
-    let totalTokens = 0;
-    for (const addr of Object.keys(balances)) {
-      totalTokens += balances[addr];
-    }
-
-    for (const addr of Object.keys(vault)) {
-      if (!vault[addr].length) continue;
-
-      const vaultBalance = vault[addr]
-        .map((a) => a.balance)
-        .reduce((a, b) => a + b, 0);
-      totalTokens += vaultBalance;
-      if (addr in balances) {
-        balances[addr] += vaultBalance;
-      } else {
-        balances[addr] = vaultBalance;
-      }
-    }
-
-    const weighted: { [address: string]: number } = {};
-    for (const addr of Object.keys(balances)) {
-      weighted[addr] = balances[addr] / totalTokens;
-    }
-
-    return this.weightedRandom(weighted);
-  }
-
-  /**
-   * Get the state of a contract
-   * @param addr Address of the contract
-   * @returns Contract state
-   */
-  private async getState<T = any>(addr: string): Promise<T> {
-    if (this.cache) return (await fetchContract(addr))?.state;
-    else {
-      const contract = this.smartweave.contract(addr).connect(this.wallet);
-
-      return (await contract.readState()).state as T;
-    }
-  }
-
-  /**
-   * Validate an Arweave hash, such as transaction ID,
-   * wallet address, etc.
-   * @param hash The hash to validate
-   * @returns If the hash is valid
-   */
-  private validateHash(hash: string) {
-    return /[a-z0-9_-]{43}/i.test(hash);
-  }
-
-  /**
-   * Get the value for a PST's setting
-   * @param name Name of the setting
-   * @param state Full contract state
-   * @returns Value of the setting
-   */
-  private getPSTSettingValue(name: string, state: { settings: [string, any][], [key: string]: any }) {
-    return state.settings.find(([settingName]) => settingName === name)?.[1];
   }
 }
