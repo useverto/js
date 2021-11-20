@@ -471,7 +471,7 @@ export default class Verto {
    */
   async cancel(order: string): Promise<string> {
     const contract = this.smartweave
-      .contract(this.COMMUNITY_CONTRACT)
+      .contract(this.CLOB_CONTRACT)
       .connect(this.wallet);
 
     const transactionID = await contract.writeInteraction(
@@ -486,7 +486,7 @@ export default class Verto {
         },
         {
           name: "Action",
-          value: "cancelOrder",
+          value: "CancelOrder",
         },
       ]
     );
