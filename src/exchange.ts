@@ -182,7 +182,8 @@ export default class Exchange {
     return transactionID;
   }
 
-  // TODO: implement cache and switch to clob contract
+  // TODO: clob
+  // TODO: cache / no-cache
 
   /**
    * Fetches the order book for a specific trading post and token.

@@ -80,6 +80,8 @@ export default class User {
     } else return await fetchBalancesForAddress(address);
   }
 
+  // TODO: cache / no-cache
+
   /**
    * Fetches the orders for a given wallet address.
    * @param address User wallet address.
@@ -91,6 +93,9 @@ export default class User {
     );
     return res.data;
   }
+
+  // TODO: recode
+  // TODO: cache / no-cache
 
   /**
    * Fetches the latest transactions for a given wallet address.

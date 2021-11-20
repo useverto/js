@@ -116,6 +116,9 @@ export default class Token {
     }
   }
 
+  // TODO: clob
+  // TODO: cache / no-cache
+
   /**
    * Fetches the latest price for a given token.
    * @param id Token contract id.
@@ -125,6 +128,9 @@ export default class Token {
     const res = await axios.get(`${this.utils.endpoint}/token/${id}/price`);
     return res.data;
   }
+
+  // TODO: clob
+  // TODO: cache / no-cache
 
   /**
    * Fetches the price history for a given token.
@@ -138,6 +144,9 @@ export default class Token {
     return res.data;
   }
 
+  // TODO: clob
+  // TODO: cache / no-cache
+
   /**
    * Fetches the latest volume for a given token.
    * @param id Token contract id.
@@ -147,6 +156,9 @@ export default class Token {
     const res = await axios.get(`${this.utils.endpoint}/token/${id}/volume`);
     return res.data;
   }
+
+  // TODO: clob
+  // TODO: cache / no-cache
 
   /**
    * Fetches the volume history for a given token.

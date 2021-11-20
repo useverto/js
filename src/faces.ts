@@ -65,7 +65,7 @@ export interface PriceInterface {
   type?: TokenType;
 }
 
-// Trading Post Interfaces
+// TODO: remove
 
 export interface TradingPostInterface {
   address: string;
