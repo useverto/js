@@ -257,6 +257,18 @@ export default class Verto {
     return parsedTokens;
   }
 
+  // TODO
+  /**
+   * Fetches the type for a given token.
+   * @param id Token contract id.
+   * @returns The type of the token.
+   */
+  /*async getTokenType(id: string): Promise<TokenType> {
+    if (this.cache) {
+
+    } 
+  }*/
+
   /**
    * Fetches the latest price for a given token.
    * @param id Token contract id.
