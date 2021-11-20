@@ -9,8 +9,12 @@ import axios from "axios";
 import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import {
   CommunityContractToken,
+  CommunityContractPeople,
+  UserBalance,
   fetchContract,
   fetchTokens,
+  fetchUsers,
+  fetchBalancesForAddress,
   fetchTokenStateMetadata,
 } from "verto-cache-interface";
 import {
@@ -68,9 +72,17 @@ export default class Verto {
    * @returns The user's data such as name & image, or undefined.
    */
   async getUser(input: string): Promise<UserInterface | undefined> {
-    const res = await axios.get(`${this.endpoint}/user/${input}`);
-    if (res.data === "Not Found") return undefined;
-    return res.data;
+    let allUsers: CommunityContractPeople[];
+
+    if (this.cache) allUsers = await fetchUsers();
+    else {
+      const contract = await this.getState(this.COMMUNITY_CONTRACT);
+      allUsers = contract.people;
+    }
+
+    return allUsers.find(
+      (user) => user.username === input || user.addresses.includes(input)
+    );
   }
 
   /**
@@ -78,9 +90,8 @@ export default class Verto {
    * @param address User wallet address.
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
-  async getBalances(address: string): Promise<BalanceInterface[]> {
-    const res = await axios.get(`${this.endpoint}/user/${address}/balances`);
-    return res.data;
+  async getBalances(address: string): Promise<UserBalance[]> {
+    return await fetchBalancesForAddress(address);
   }
 
   /**
@@ -306,29 +317,36 @@ export default class Verto {
    * @param address The ID of the token
    * @returns InteractionID
    */
-  async list(address: string, type: TokenType, tags: DecodedTag[] = []): Promise<string> {
+  async list(
+    address: string,
+    type: TokenType,
+    tags: DecodedTag[] = []
+  ): Promise<string> {
     const contract = this.smartweave
       .contract(this.COMMUNITY_CONTRACT)
       .connect(this.wallet);
 
-    if(!this.validateHash(address)) throw new Error("Invalid token address.");
+    if (!this.validateHash(address)) throw new Error("Invalid token address.");
 
     // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction({
-      function: "list",
-      id: address,
-      type
-    }, [
+    const interactionID = await contract.writeInteraction(
       {
-        name: "Exchange",
-        value: "Verto",
+        function: "list",
+        id: address,
+        type,
       },
-      {
-        name: "Action",
-        value: "ListToken",
-      },
-      ...tags
-    ]);
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "ListToken",
+        },
+        ...tags,
+      ]
+    );
 
     if (!interactionID) throw new Error("Could not list token.");
 
@@ -348,24 +366,28 @@ export default class Verto {
     if (pair.length !== 2) throw new Error("Invalid pair. Length should be 2.");
 
     pair.forEach((hash) => {
-      if (!this.validateHash(hash)) throw new Error(`Invalid token address in pair "${hash}".`);
+      if (!this.validateHash(hash))
+        throw new Error(`Invalid token address in pair "${hash}".`);
     });
 
     // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction({
-      function: "addPair",
-      pair
-    }, [
+    const interactionID = await contract.writeInteraction(
       {
-        name: "Exchange",
-        value: "Verto",
+        function: "addPair",
+        pair,
       },
-      {
-        name: "Action",
-        value: "AddPair",
-      },
-      ...tags
-    ]);
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "AddPair",
+        },
+        ...tags,
+      ]
+    );
 
     if (!interactionID) throw new Error("Could not add pair.");
 
@@ -443,33 +465,34 @@ export default class Verto {
 
   /**
    * Cancel a swap.
-   * @param order The transaction id of the swap.
+   * @param orderID The transaction id of the swap.
    * @returns The transaction id of the cancel.
    */
-  async cancel(order: string): Promise<string> {
-    const gql = new ArDB(this.arweave);
-    const res = (await gql
-      .search("transaction")
-      .id(order)
-      .only("recipient")
-      .findOne()) as GQLTransactionInterface;
+  async cancel(orderID: string): Promise<string> {
+    const contract = this.smartweave
+      .contract(this.CLOB_CONTRACT)
+      .connect(this.wallet);
 
-    const transaction = await this.arweave.createTransaction(
+    const transactionID = await contract.writeInteraction(
       {
-        target: res.recipient,
-        data: Math.random().toString().slice(-4),
+        function: "cancelOrder",
+        orderID,
       },
-      this.wallet
+      [
+        {
+          name: "Exchange",
+          value: "Verto",
+        },
+        {
+          name: "Action",
+          value: "CancelOrder",
+        },
+      ]
     );
 
-    transaction.addTag("Exchange", "Verto");
-    transaction.addTag("Type", "Cancel");
-    transaction.addTag("Order", order);
+    if (!transactionID) throw new Error("Order could not be cancelled");
 
-    await this.arweave.transactions.sign(transaction, this.wallet);
-    await this.arweave.transactions.post(transaction);
-
-    return transaction.id;
+    return transactionID;
   }
 
   // TODO: implement cache and switch to clob contract
@@ -608,5 +631,9 @@ export default class Verto {
 
   private validateHash(hash: string) {
     return /[a-z0-9_-]{43}/i.test(hash);
+  }
+
+  private async mine() {
+    await this.arweave.api.get("mine");
   }
 }

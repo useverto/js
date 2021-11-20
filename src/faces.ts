@@ -92,5 +92,5 @@ export type TokenPair = [string, string];
 
 export interface DecodedTag {
   name: string;
-  value: string
+  value: string;
 }
