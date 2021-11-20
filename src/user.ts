@@ -1,16 +1,15 @@
-import { CommunityContractPeople, fetchBalancesForAddress, fetchUsers, UserBalance } from "verto-cache-interface"
 import {
-  OrderInterface,
-  TransactionInterface,
-  UserInterface
-} from "./faces";
-import {
-  GQLEdgeTransactionInterface,
-} from "ardb/lib/faces/gql";
+  CommunityContractPeople,
+  fetchBalancesForAddress,
+  fetchUsers,
+  UserBalance,
+} from "verto-cache-interface";
+import { OrderInterface, TransactionInterface, UserInterface } from "./faces";
+import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
 import ArDB from "ardb";
 import Arweave from "arweave";
-import axios from "axios"
-import Utils from "./utils"
+import axios from "axios";
+import Utils from "./utils";
 
 export default class User {
   private arweave: Arweave;
@@ -23,7 +22,7 @@ export default class User {
    * @param cache Use the Verto cache.
    * @param utils Utils submodule.
    */
-   constructor(arweave: Arweave, cache: boolean, utils: Utils) {
+  constructor(arweave: Arweave, cache: boolean, utils: Utils) {
     this.arweave = arweave;
     this.cache = cache;
     this.utils = utils;
@@ -34,7 +33,7 @@ export default class User {
    * @param input User wallet address or username.
    * @returns The user's data such as name & image, or undefined.
    */
-   async getUser(input: string): Promise<UserInterface | undefined> {
+  async getUser(input: string): Promise<UserInterface | undefined> {
     let allUsers: CommunityContractPeople[];
 
     if (this.cache) allUsers = await fetchUsers();
@@ -69,7 +68,7 @@ export default class User {
             ticker: token.ticker,
             logo: this.utils.getPSTSettingValue("communityLogo", tokenState),
             balance: tokenState.balances[address],
-            userAddress: address
+            userAddress: address,
           });
         }
       }
@@ -84,7 +83,9 @@ export default class User {
    * @returns List of order ids, statuses, inputs, outputs, & timestamps.
    */
   async getOrders(address: string): Promise<OrderInterface[]> {
-    const res = await axios.get(`${this.utils.endpoint}/user/${address}/orders`);
+    const res = await axios.get(
+      `${this.utils.endpoint}/user/${address}/orders`
+    );
     return res.data;
   }
 

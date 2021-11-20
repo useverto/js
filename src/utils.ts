@@ -3,7 +3,7 @@ import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
 import { VaultInterface } from "./faces";
 import Arweave from "arweave";
-import axios from "axios"
+import axios from "axios";
 
 export default class Utils {
   private arweave: Arweave;
@@ -25,7 +25,12 @@ export default class Utils {
    * @param cache Use the Verto cache.
    * @param smartweave SmartWeave instance.
    */
-   constructor(arweave: Arweave, wallet: "use_wallet" | JWKInterface, cache: boolean, smartweave: SmartWeave) {
+  constructor(
+    arweave: Arweave,
+    wallet: "use_wallet" | JWKInterface,
+    cache: boolean,
+    smartweave: SmartWeave
+  ) {
     this.arweave = arweave;
     this.wallet = wallet;
     this.cache = cache;
@@ -113,7 +118,10 @@ export default class Utils {
    * @param state Full contract state
    * @returns Value of the setting
    */
-  public getPSTSettingValue(name: string, state: { settings: [string, any][], [key: string]: any }) {
+  public getPSTSettingValue(
+    name: string,
+    state: { settings: [string, any][]; [key: string]: any }
+  ) {
     return state.settings.find(([settingName]) => settingName === name)?.[1];
   }
 
@@ -122,7 +130,7 @@ export default class Utils {
    * total supply.
    * @returns Address of the selected holder
    */
-   private async selectWeightedHolder(): Promise<string> {
+  private async selectWeightedHolder(): Promise<string> {
     const res = await axios.get(
       `${this.endpoint}/${this.EXCHANGE_CONTRACT}?filter=state.balances%20state.vault`
     );

@@ -64,7 +64,12 @@ export default class Verto {
     this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
 
     // Submodules
-    this.utils = new Utils(this.arweave, this.wallet, this.cache, this.smartweave);
+    this.utils = new Utils(
+      this.arweave,
+      this.wallet,
+      this.cache,
+      this.smartweave
+    );
     this.user = new User(this.arweave, this.cache, this.utils);
   }
 
