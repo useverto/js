@@ -1,3 +1,4 @@
+import { cacheContractHook } from "verto-cache-interface";
 import { SmartWeave } from "redstone-smartweave";
 import {
   DecodedTag,
@@ -57,23 +58,26 @@ export default class Exchange {
         throw new Error(`Invalid token address in pair "${hash}".`);
     });
 
-    // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction(
-      {
-        function: "addPair",
-        pair,
-      },
-      [
-        {
-          name: "Exchange",
-          value: "Verto",
-        },
-        {
-          name: "Action",
-          value: "AddPair",
-        },
-        ...tags,
-      ]
+    const interactionID = await cacheContractHook(
+      () =>
+        contract.writeInteraction(
+          {
+            function: "addPair",
+            pair,
+          },
+          [
+            {
+              name: "Exchange",
+              value: "Verto",
+            },
+            {
+              name: "Action",
+              value: "AddPair",
+            },
+            ...tags,
+          ]
+        ),
+      this.utils.CLOB_CONTRACT
     );
 
     if (!interactionID) throw new Error("Could not add pair.");
@@ -108,34 +112,37 @@ export default class Exchange {
       .contract(this.utils.CLOB_CONTRACT)
       .connect(this.wallet);
 
-    // Transfer input tokens to the orderbook
-    const transferID = await this.token.transfer(
-      amount,
-      pair.from,
-      this.utils.CLOB_CONTRACT,
-      [{ name: "Type", value: "Send-Input" }]
-    );
+    const orderID = await cacheContractHook(async () => {
+      // Transfer input tokens to the orderbook
+      const transferID = await this.token.transfer(
+        amount,
+        pair.from,
+        this.utils.CLOB_CONTRACT,
+        [{ name: "Type", value: "Send-Input" }]
+      );
 
-    // Create the swap interaction
-    const orderID = await contract.writeInteraction(
-      {
-        function: "createOrder",
-        transaction: transferID,
-        pair: [pair.from, pair.to],
-        price: price,
-      },
-      [
+      // Create the swap interaction
+      return await contract.writeInteraction(
         {
-          name: "Exchange",
-          value: "Verto",
+          function: "createOrder",
+          transaction: transferID,
+          pair: [pair.from, pair.to],
+          price: price,
         },
-        {
-          name: "Action",
-          value: "Order",
-        },
-        ...tags,
-      ]
-    );
+        [
+          {
+            name: "Exchange",
+            value: "Verto",
+          },
+          {
+            name: "Action",
+            value: "Order",
+          },
+          ...tags,
+        ]
+      );
+    }, this.utils.CLOB_CONTRACT);
+    // TODO: first refresh the transfer token contract, then the clob contract, then the other token (in the pair) contract
 
     if (orderID === null) throw new Error("Could not create order");
 
@@ -145,6 +152,7 @@ export default class Exchange {
     // Create VRT holder fee
     await this.utils.createFee(amount, pair.from, orderID, "token_holder");
 
+    // Call Discord hook
     axios.post(`https://hook.verto.exchange/api/transaction?id=${orderID}`);
 
     return orderID;
