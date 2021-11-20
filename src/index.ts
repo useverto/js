@@ -91,8 +91,7 @@ export default class Verto {
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
   async getBalances(address: string): Promise<UserBalance[]> {
-    const balances: UserBalance[] = await fetchBalancesForAddress(address);
-    return balances;
+    return await fetchBalancesForAddress(address);
   }
 
   /**
