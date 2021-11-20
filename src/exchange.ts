@@ -41,6 +41,9 @@ export default class Exchange {
     this.token = token;
   }
 
+  // TODO: figure out how can we test with the contract hooks
+  // we don't want to send hooks while testing, waste of resources
+
   /**
    * Add a new pair to the exchange.
    * @param pair A tuple of two token IDs
