@@ -86,12 +86,32 @@ export default class Verto {
   }
 
   /**
-   * Fetches the assets for a given wallet address.
+   * Fetches the assets (listed on Verto) for a given wallet address.
    * @param address User wallet address.
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
   async getBalances(address: string): Promise<UserBalance[]> {
-    return await fetchBalancesForAddress(address);
+    if (!this.cache) {
+      const balances: UserBalance[] = [];
+      const listedTokens = await this.getTokens();
+
+      for (const token of listedTokens) {
+        const tokenState = await this.getState(token.id);
+
+        if (tokenState?.balances?.[address]) {
+          balances.push({
+            contractId: token.id,
+            name: token.name,
+            ticker: token.ticker,
+            logo: this.getPSTSettingValue("communityLogo", tokenState),
+            balance: tokenState.balances[address],
+            userAddress: address
+          });
+        }
+      }
+
+      return balances;
+    } else return await fetchBalancesForAddress(address);
   }
 
   /**
@@ -198,7 +218,7 @@ export default class Verto {
   // === Token Functions ===
 
   /**
-   * Fetches the tokens traded on Verto.
+   * Fetches the tokens listed on Verto.
    * @returns List of token ids, names, & tickers.
    */
   async getTokens(type?: TokenType): Promise<TokenInterface[]> {
@@ -620,20 +640,32 @@ export default class Verto {
    * @param addr Address of the contract
    * @returns Contract state
    */
-  private async getState(addr: string) {
+  private async getState<T = any>(addr: string): Promise<T> {
     if (this.cache) return (await fetchContract(addr))?.state;
     else {
       const contract = this.smartweave.contract(addr).connect(this.wallet);
 
-      return (await contract.readState()).state;
+      return (await contract.readState()).state as T;
     }
   }
 
+  /**
+   * Validate an Arweave hash, such as transaction ID,
+   * wallet address, etc.
+   * @param hash The hash to validate
+   * @returns If the hash is valid
+   */
   private validateHash(hash: string) {
     return /[a-z0-9_-]{43}/i.test(hash);
   }
 
-  private async mine() {
-    await this.arweave.api.get("mine");
+  /**
+   * Get the value for a PST's setting
+   * @param name Name of the setting
+   * @param state Full contract state
+   * @returns Value of the setting
+   */
+  private getPSTSettingValue(name: string, state: { settings: [string, any][], [key: string]: any }) {
+    return state.settings.find(([settingName]) => settingName === name)?.[1];
   }
 }
