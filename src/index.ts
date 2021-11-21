@@ -1,5 +1,5 @@
 import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
-import { ExtensionOrJWK } from "./faces";
+import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
 import Arweave from "arweave";
 import Utils from "./utils";
 import User from "./user";
@@ -36,7 +36,8 @@ export default class Verto {
   constructor(
     arweave?: Arweave,
     wallet?: ExtensionOrJWK,
-    cache: boolean = true
+    cache: boolean = true,
+    globalConfig?: GlobalConfigInterface
   ) {
     if (arweave) this.arweave = arweave;
     if (wallet) this.wallet = wallet;
@@ -49,7 +50,8 @@ export default class Verto {
       this.arweave,
       this.wallet,
       this.cache,
-      this.smartweave
+      this.smartweave,
+      globalConfig
     );
     this.token = new Token(
       this.arweave,

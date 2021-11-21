@@ -96,3 +96,11 @@ export interface DecodedTag {
 }
 
 export type ExtensionOrJWK = "use_wallet" | JWKInterface;
+
+/**
+ * Config type for Global Verto Variables
+ */
+export interface GlobalConfigInterface {
+  CLOB_CONTRACT?: string;
+  COMMUNITY_CONTRACT?: string;
+}

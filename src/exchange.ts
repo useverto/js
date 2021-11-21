@@ -145,7 +145,6 @@ export default class Exchange {
         ]
       );
     }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
-    // TODO: first refresh the transfer token contract, then the clob contract, then the other token (in the pair) contract
 
     if (orderID === null) throw new Error("Could not create order");
 

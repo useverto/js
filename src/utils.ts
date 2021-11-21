@@ -1,6 +1,6 @@
 import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
-import { ExtensionOrJWK, VaultInterface } from "./faces";
+import { ExtensionOrJWK, GlobalConfigInterface, VaultInterface } from "./faces";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -29,12 +29,21 @@ export default class Utils {
     arweave: Arweave,
     wallet: ExtensionOrJWK,
     cache: boolean,
-    smartweave: SmartWeave
+    smartweave: SmartWeave,
+    globalConfig?: GlobalConfigInterface
   ) {
     this.arweave = arweave;
     this.wallet = wallet;
     this.cache = cache;
     this.smartweave = smartweave;
+
+    // Set custom config
+    if (globalConfig) {
+      if (globalConfig.CLOB_CONTRACT)
+        this.CLOB_CONTRACT = globalConfig.CLOB_CONTRACT;
+      if (globalConfig.COMMUNITY_CONTRACT)
+        this.COMMUNITY_CONTRACT = globalConfig.COMMUNITY_CONTRACT;
+    }
   }
 
   /**
