@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "ar-gql": "^0.0.6",
-    "ardb": "^1.1.8",
     "arweave": "^1.10.18",
     "axios": "^0.24.0",
     "redstone-smartweave": "^0.3.10-alpha.19",

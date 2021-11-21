@@ -1,12 +1,11 @@
 import {
   CommunityContractPeople,
   fetchBalancesForAddress,
+  fetchContract,
   fetchUsers,
   UserBalance,
 } from "verto-cache-interface";
 import { OrderInterface, TransactionInterface, UserInterface } from "./faces";
-import { GQLEdgeTransactionInterface } from "ardb/lib/faces/gql";
-import ArDB from "ardb";
 import Arweave from "arweave";
 import axios from "axios";
 import Utils from "./utils";
@@ -94,9 +93,6 @@ export default class User {
     return res.data;
   }
 
-  // TODO: recode
-  // TODO: cache / no-cache
-
   /**
    * Fetches the latest transactions for a given wallet address.
    * @param address User wallet address.
@@ -107,29 +103,97 @@ export default class User {
     address: string,
     after?: string
   ): Promise<TransactionInterface[]> {
-    ///
-    const gql = new ArDB(this.arweave);
-    let inTxQuery = gql.search().to(address).limit(5);
-    let outTxQuery = gql.search().from(address).limit(5);
+    let maxHeight: number | undefined = undefined;
 
+    // get the block height for the after tx
     if (after) {
-      const tx = (await new ArDB(this.arweave)
-        .search()
-        .id(after)
-        .only(["block", "block.height"])
-        .findOne()) as GQLEdgeTransactionInterface[];
+      const tx = await this.utils.arGQL(
+        `
+        query($id: ID!) {
+          transaction(id: $id) {
+            id
+            block {
+              height
+            }
+          }
+        }      
+      `,
+        { id: after }
+      );
 
-      if (tx.length) {
-        inTxQuery = inTxQuery.max(tx[0].node.block.height);
-        outTxQuery = outTxQuery.max(tx[0].node.block.height);
+      if (tx) {
+        maxHeight = tx.data.transaction.block.height;
       }
     }
 
-    let inTxs = (await inTxQuery.find()) as GQLEdgeTransactionInterface[];
-    let outTxs = (await outTxQuery.find()) as GQLEdgeTransactionInterface[];
+    // get outgoing txs
+    const outTxQuery = await this.utils.arGQL(
+      `
+      query ($addr: String!, $max: Int) {
+        transactions (owners: [$addr], block: { max: $max }) {
+          edges {
+            node {
+              id
+              owner {
+                address
+              }
+              recipient
+              quantity {
+                ar
+                winston
+              }
+              tags {
+                name
+                value
+              }
+              block {
+                timestamp
+              }
+            }
+          }
+        }
+      }
+    `,
+      { addr: address, max: maxHeight }
+    );
 
-    //
+    // get incoming txs
+    const inTxQuery = await this.utils.arGQL(
+      `
+      query ($addr: String!, $max: Int) {
+        transactions (recipients: [$addr], block: { max: $max }) {
+          edges {
+            node {
+              id
+              owner {
+                address
+              }
+              recipient
+              quantity {
+                ar
+                winston
+              }
+              tags {
+                name
+                value
+              }
+              block {
+                timestamp
+              }
+            }
+          }
+        }
+      }
+    `,
+      { addr: address, max: maxHeight }
+    );
 
+    // parse data
+    let inTxs = inTxQuery.data.transactions.edges;
+    let outTxs = outTxQuery.data.transactions.edges;
+
+    // if we are limiting to an "after" tx
+    // remove the ones before that tx
     if (after) {
       const inIndex = inTxs.findIndex((tx) => tx.node.id === after);
       const outIndex = outTxs.findIndex((tx) => tx.node.id === after);
@@ -138,41 +202,48 @@ export default class User {
       if (outIndex > -1) outTxs = outTxs.slice(outIndex + 1);
     }
 
+    // we'll push the formatted txs here
     const res: TransactionInterface[] = [];
 
     for (const { node } of [...inTxs, ...outTxs]) {
       if (res.find(({ id }) => id === node.id)) continue;
 
-      const appName = node.tags.find((tag) => tag.name === "App-Name");
+      const appName = this.utils.getTagValue("App-Name", node.tags);
 
       let status;
       let amount;
-      if (appName && appName.value === "SmartWeaveAction") {
+
+      // do some checks to see if it is a token transfer
+      // if it is, we format the amount
+      if (appName && appName === "SmartWeaveAction") {
         const input = node.tags.find((tag) => tag.name === "Input");
 
         if (input) {
           const parsedInput = JSON.parse(input.value);
+          const contractID = this.utils.getTagValue("Contract", node.tags);
 
-          if (parsedInput.function === "transfer" && parsedInput.qty) {
-            const { data: contract } = await axios.get(
-              `${this.utils.endpoint}/${
-                node.tags.find((tag) => tag.name === "Contract")?.value
-              }?filter=state.ticker%20validity.${node.id}`
-            );
+          if (
+            parsedInput.function === "transfer" &&
+            parsedInput.qty &&
+            contractID
+          ) {
+            const contract = await fetchContract(contractID, true);
 
-            amount = `${parsedInput.qty} ${
-              contract.state ? contract.state.ticker : "???"
-            }`;
+            if (contract) {
+              amount = `${parsedInput.qty} ${
+                contract.state ? contract.state.ticker : "???"
+              }`;
 
-            if (contract.validity && contract.validity[node.id] === false)
-              status = "error";
+              if (contract.validity && contract.validity[node.id] === false)
+                status = "error";
+            }
           }
         }
       }
 
       res.push({
         id: node.id,
-        // @ts-ignore
+        // @ts-expect-error
         status: node.block ? status || "success" : "pending",
         type: node.owner.address === address ? "out" : "in",
         amount: amount || `${parseFloat(node.quantity.ar)} AR`,

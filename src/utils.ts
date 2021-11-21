@@ -1,6 +1,12 @@
-import { GQLResultInterface, SmartWeave } from "redstone-smartweave";
+import {
+  DecodedTag,
+  ExtensionOrJWK,
+  GlobalConfigInterface,
+  VaultInterface,
+} from "./faces";
+import { SmartWeave } from "redstone-smartweave";
+import { run } from "ar-gql";
 import { fetchContract } from "verto-cache-interface";
-import { ExtensionOrJWK, GlobalConfigInterface, VaultInterface } from "./faces";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -144,7 +150,7 @@ export default class Utils {
   public async arGQL(
     query: string,
     variables?: Record<string, any>
-  ): Promise<GQLResultInterface> {
+  ): Promise<ReturnType<typeof run>> {
     const graphql = JSON.stringify({
       query,
       variables,
@@ -164,6 +170,16 @@ export default class Utils {
     );
 
     return res;
+  }
+
+  /**
+   * Get the value for a given tag name
+   * @param name Name of the tag
+   * @param tags All tags to search from
+   * @returns The value of the tag
+   */
+  public getTagValue(name: string, tags: DecodedTag[]) {
+    return tags.find((tag) => tag.name === name)?.value;
   }
 
   // TODO: cache / no-cache
