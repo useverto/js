@@ -1,4 +1,4 @@
-import { SmartWeave } from "redstone-smartweave";
+import { GQLResultInterface, SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
 import { ExtensionOrJWK, GlobalConfigInterface, VaultInterface } from "./faces";
 import Arweave from "arweave";
@@ -132,6 +132,38 @@ export default class Utils {
     state: { settings: [string, any][]; [key: string]: any }
   ) {
     return state.settings.find(([settingName]) => settingName === name)?.[1];
+  }
+
+  /**
+   * Execute a graphql request to the configured
+   * Arweave gateway
+   * @param query The graphql query string
+   * @param variables Optional variables
+   * @returns Graphql API response
+   */
+  public async arGQL(
+    query: string,
+    variables?: Record<string, any>
+  ): Promise<GQLResultInterface> {
+    const graphql = JSON.stringify({
+      query,
+      variables,
+    });
+    const clientConfig = this.arweave.api.getConfig();
+
+    const { data: res } = await axios.post(
+      `${clientConfig.protocol}://${clientConfig.host ?? "arweave.net"}:${
+        clientConfig.port ?? 443
+      }/graphql`,
+      graphql,
+      {
+        headers: {
+          "content-type": "application/json",
+        },
+      }
+    );
+
+    return res;
   }
 
   // TODO: cache / no-cache

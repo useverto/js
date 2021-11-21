@@ -107,6 +107,7 @@ export default class User {
     address: string,
     after?: string
   ): Promise<TransactionInterface[]> {
+    ///
     const gql = new ArDB(this.arweave);
     let inTxQuery = gql.search().to(address).limit(5);
     let outTxQuery = gql.search().from(address).limit(5);
@@ -126,6 +127,8 @@ export default class User {
 
     let inTxs = (await inTxQuery.find()) as GQLEdgeTransactionInterface[];
     let outTxs = (await outTxQuery.find()) as GQLEdgeTransactionInterface[];
+
+    //
 
     if (after) {
       const inIndex = inTxs.findIndex((tx) => tx.node.id === after);
