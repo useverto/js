@@ -182,44 +182,44 @@ export default class Utils {
     return tags.find((tag) => tag.name === name)?.value;
   }
 
-  // TODO: cache / no-cache
-
   /**
    * Select a token holder based on their share of the
    * total supply.
    * @returns Address of the selected holder
    */
   private async selectWeightedHolder(): Promise<string> {
-    const res = await axios.get(
-      `${this.endpoint}/${this.EXCHANGE_CONTRACT}?filter=state.balances%20state.vault`
-    );
-
-    const { state } = res.data;
-    const balances: { [address: string]: number } = state.balances;
-    const vault: VaultInterface = state.vault;
+    const state: {
+      balances: { [address: string]: number };
+      vault: VaultInterface;
+      [key: string]: any;
+    } = await this.getState(this.EXCHANGE_CONTRACT);
 
     let totalTokens = 0;
-    for (const addr of Object.keys(balances)) {
-      totalTokens += balances[addr];
+
+    for (const addr of Object.keys(state.balances)) {
+      totalTokens += state.balances[addr];
     }
 
-    for (const addr of Object.keys(vault)) {
-      if (!vault[addr].length) continue;
+    for (const addr of Object.keys(state.vault)) {
+      if (!state.vault[addr].length) continue;
 
-      const vaultBalance = vault[addr]
+      const vaultBalance = state.vault[addr]
         .map((a) => a.balance)
         .reduce((a, b) => a + b, 0);
+
       totalTokens += vaultBalance;
-      if (addr in balances) {
-        balances[addr] += vaultBalance;
+
+      if (addr in state.balances) {
+        state.balances[addr] += vaultBalance;
       } else {
-        balances[addr] = vaultBalance;
+        state.balances[addr] = vaultBalance;
       }
     }
 
     const weighted: { [address: string]: number } = {};
-    for (const addr of Object.keys(balances)) {
-      weighted[addr] = balances[addr] / totalTokens;
+
+    for (const addr of Object.keys(state.balances)) {
+      weighted[addr] = state.balances[addr] / totalTokens;
     }
 
     return this.weightedRandom(weighted);
