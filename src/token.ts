@@ -1,4 +1,5 @@
 import {
+  cacheContractHook,
   CommunityContractState,
   CommunityContractToken,
   fetchTokenMetadata,
@@ -187,22 +188,33 @@ export default class Token {
     tags: { name: string; value: string }[] = []
   ) {
     const contract = this.smartweave.contract(id).connect(this.wallet);
-    const transaction = contract.writeInteraction(
-      {
-        function: "transfer",
-        target,
-        qty: amount,
-      },
-      [
-        { name: "Exchange", value: "Verto" },
-        { name: "Action", value: "Transfer" },
-        ...tags,
-      ],
-      {
-        target,
-        winstonQty: "0",
-      }
-    );
+    const interaction = () =>
+      contract.writeInteraction(
+        {
+          function: "transfer",
+          target,
+          qty: amount,
+        },
+        [
+          { name: "Exchange", value: "Verto" },
+          { name: "Action", value: "Transfer" },
+          ...tags,
+        ],
+        {
+          target,
+          winstonQty: "0",
+        }
+      );
+
+    // get listed tokens to see if we need to refres the cache
+    const listedTokens = await fetchTokens();
+    let transaction: string | null;
+
+    if (listedTokens.find((token) => token.id === id))
+      transaction = await cacheContractHook(interaction, id);
+    else transaction = await interaction();
+
+    if (!transaction) throw new Error("Could not create transfer interaction.");
 
     return transaction;
   }
@@ -225,23 +237,28 @@ export default class Token {
       throw new Error("Invalid token address.");
 
     // TODO: do we want fees on this @t8
-    const interactionID = await contract.writeInteraction(
-      {
-        function: "list",
-        id: address,
-        type,
-      },
-      [
-        {
-          name: "Exchange",
-          value: "Verto",
-        },
-        {
-          name: "Action",
-          value: "ListToken",
-        },
-        ...tags,
-      ]
+    const interactionID = await cacheContractHook(
+      async () =>
+        contract.writeInteraction(
+          {
+            function: "list",
+            id: address,
+            type,
+          },
+          [
+            {
+              name: "Exchange",
+              value: "Verto",
+            },
+            {
+              name: "Action",
+              value: "ListToken",
+            },
+            ...tags,
+          ]
+        ),
+      this.utils.COMMUNITY_CONTRACT,
+      true
     );
 
     if (!interactionID) throw new Error("Could not list token.");

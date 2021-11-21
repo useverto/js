@@ -41,9 +41,6 @@ export default class Exchange {
     this.token = token;
   }
 
-  // TODO: figure out how can we test with the contract hooks
-  // we don't want to send hooks while testing, waste of resources
-
   /**
    * Add a new pair to the exchange.
    * @param pair A tuple of two token IDs
@@ -106,7 +103,10 @@ export default class Exchange {
     tags: DecodedTag[] = []
   ): Promise<string> {
     // Validate hashes
-    if (!/[a-z0-9_-]{43}/i.test(pair.from) || !/[a-z0-9_-]{43}/i.test(pair.to))
+    if (
+      !this.utils.validateHash(pair.from) ||
+      !this.utils.validateHash(pair.to)
+    )
       throw new Error(
         "Invalid ID in pair. Must be a valid SmartWeave contract ID"
       );
@@ -144,7 +144,7 @@ export default class Exchange {
           ...tags,
         ]
       );
-    }, this.utils.CLOB_CONTRACT);
+    }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
     // TODO: first refresh the transfer token contract, then the clob contract, then the other token (in the pair) contract
 
     if (orderID === null) throw new Error("Could not create order");
@@ -171,21 +171,25 @@ export default class Exchange {
       .contract(this.utils.CLOB_CONTRACT)
       .connect(this.wallet);
 
-    const transactionID = await contract.writeInteraction(
-      {
-        function: "cancelOrder",
-        orderID,
-      },
-      [
-        {
-          name: "Exchange",
-          value: "Verto",
-        },
-        {
-          name: "Action",
-          value: "CancelOrder",
-        },
-      ]
+    const transactionID = await cacheContractHook(
+      async () =>
+        contract.writeInteraction(
+          {
+            function: "cancelOrder",
+            orderID,
+          },
+          [
+            {
+              name: "Exchange",
+              value: "Verto",
+            },
+            {
+              name: "Action",
+              value: "CancelOrder",
+            },
+          ]
+        ),
+      this.utils.CLOB_CONTRACT
     );
 
     if (!transactionID) throw new Error("Order could not be cancelled");
