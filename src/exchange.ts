@@ -194,11 +194,11 @@ export default class Exchange {
   }
 
   /**
-   * Fetches the order book for a specific token from the CLOB contract.
-   * @param id Token contract id.
-   * @returns List of order ids, amounts, rates, & types.
+   * Fetches the order book for a specific token from the CLOB contract
+   * @param input Token contract ID or token pair
+   * @returns List of orders
    */
-  async getOrderBook(id: string): Promise<OrderBookInterface[]> {
+  async getOrderBook(input: string | TokenPair): Promise<OrderBookInterface[]> {
     // get clob contract state
     const clobContractState: {
       [key: string]: any;
@@ -212,7 +212,10 @@ export default class Exchange {
 
     // map orders
     const allOrders: OrderBookInterface[][] = clobContractState.pairs
-      .filter(({ pair }) => pair.includes(id))
+      .filter(({ pair }) => {
+        if (typeof input === "string") return pair.includes(input);
+        else return pair.includes(input[0]) && pair.includes(input[1]);
+      })
       .map(({ pair, orders }) =>
         orders.map((order) => ({
           id: order.id,
