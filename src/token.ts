@@ -51,8 +51,9 @@ export default class Token {
   }
 
   /**
-   * Fetches the tokens listed on Verto.
-   * @returns List of token ids, names, & tickers.
+   * Fetches the tokens listed on Verto
+   * @type Optional type filter
+   * @returns List of token ids, names, & tickers
    */
   async getTokens(type?: TokenType): Promise<TokenInterface[]> {
     let tokens: CommunityContractToken[] = [];

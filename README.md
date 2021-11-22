@@ -141,7 +141,101 @@ The function returns an array of orders.
 
 ### Token
 
-TODO
+#### Get tokens
+
+Fetches all tokens, such as NFTs, PSTs and communities listed on Verto.
+
+```ts
+const tokens = await client.token.getTokens();
+```
+
+The function takes one param:
+
+- `type`: _Optional._ Type filter
+
+The function returns an array of tokens.
+
+#### Get a token's type
+
+Fetches the type of a given token.
+
+```ts
+const type = await client.token.getTokenType(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `id`: Token contract id
+
+The function returns the type of the token.
+
+#### Get a token's price
+
+Fetches the price of a given token.
+
+```ts
+const price = await client.token.getPrice(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `id`: Token contract id
+
+The function returns the price of the token.
+
+#### Get a token's price history
+
+Fetches the price history of a given token.
+
+```ts
+const history = await client.token.getPriceHistory(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `id`: Token contract id
+
+The function returns the price history of the token.
+
+#### Get a token's volume
+
+Fetches the volume of a given token.
+
+```ts
+const volume = await client.token.getVolume(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `id`: Token contract id
+
+The function returns the volume of the token.
+
+#### Get a token's volume history
+
+Fetches the volume history of a given token.
+
+```ts
+const history = await client.token.getVolumeHistory(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `id`: Token contract id
+
+The function returns the volume history of the token.
+
+TODO (next: transfer)
 
 ### User
 
