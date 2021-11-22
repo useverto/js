@@ -84,7 +84,7 @@ export default class Utils {
 
     const tags = {
       Exchange: "Verto",
-      Type: "Fee-VRT-Holder",
+      Type: feeTarget === "token_holder" ? "Fee-VRT-Holder" : "Fee-Exchange",
       Order: orderID,
       "App-Name": "SmartWeaveAction",
       "App-Version": "0.3.0",
