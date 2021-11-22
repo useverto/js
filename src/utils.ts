@@ -3,10 +3,12 @@ import {
   ExtensionOrJWK,
   GlobalConfigInterface,
   VaultInterface,
+  VolumeOrderInterface,
 } from "./faces";
 import { SmartWeave } from "redstone-smartweave";
-import { run } from "ar-gql";
 import { fetchContract } from "verto-cache-interface";
+import { Tag } from "arweave/node/lib/transaction";
+import { run } from "ar-gql";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -188,10 +190,7 @@ export default class Utils {
    * @param day Day to calculate for
    * @returns Volume for the day
    */
-  public calculateVolumeForDay(
-    orders: { quantity: number; timestamp: number }[],
-    day: Date
-  ) {
+  public calculateVolumeForDay(orders: VolumeOrderInterface[], day: Date) {
     const dayFrom = new Date(day).setHours(0, 0, 0, 0);
     const dayTo = new Date(day).setDate(day.getDate() + 1);
     const ordersForDay = orders.filter(
@@ -201,6 +200,13 @@ export default class Utils {
     return ordersForDay
       .map(({ quantity }) => quantity)
       .reduce((a, b) => a + b, 0);
+  }
+
+  public decodeTags(tags: Tag[]): DecodedTag[] {
+    return tags.map((tag) => ({
+      name: tag.get("name", { decode: true, string: true }),
+      value: tag.get("value", { decode: true, string: true }),
+    }));
   }
 
   /**

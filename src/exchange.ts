@@ -4,6 +4,7 @@ import {
   DecodedTag,
   ExtensionOrJWK,
   OrderBookInterface,
+  SwapPairInterface,
   TokenPair,
 } from "./faces";
 import Arweave from "arweave";
@@ -93,10 +94,7 @@ export default class Exchange {
    * @returns OrderID
    */
   async swap(
-    pair: {
-      from: string;
-      to: string;
-    },
+    pair: SwapPairInterface,
     amount: number,
     price?: number,
     tags: DecodedTag[] = []

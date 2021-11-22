@@ -2,6 +2,7 @@ import {
   cacheContractHook,
   CommunityContractState,
   CommunityContractToken,
+  fetchContract,
   fetchTokenMetadata,
   fetchTokens,
   fetchTokenStateMetadata,
@@ -13,6 +14,7 @@ import {
   PriceInterface,
   TokenInterface,
   TokenType,
+  VolumeOrderInterface,
 } from "./faces";
 import { SmartWeave } from "redstone-smartweave";
 import Arweave from "arweave";
@@ -145,17 +147,108 @@ export default class Token {
     return res.data;
   }
 
-  // TODO: clob
-  // TODO: cache / no-cache
-
   /**
    * Fetches the latest volume for a given token.
    * @param id Token contract id.
    * @returns The volume as a number.
    */
   async getVolume(id: string): Promise<number> {
-    const res = await axios.get(`${this.utils.endpoint}/token/${id}/volume`);
-    return res.data;
+    let validity: {
+      [interactionID: string]: boolean;
+    };
+
+    // get the validity for the clob contract
+    if (this.cache) {
+      const contract = await fetchContract(this.utils.CLOB_CONTRACT, true);
+
+      validity = contract?.validity;
+    } else {
+      const contract = this.smartweave
+        .contract(this.utils.CLOB_CONTRACT)
+        .connect(this.wallet);
+
+      validity = (await contract.readState())?.validity;
+    }
+
+    if (!validity) throw new Error("Could not fetch validity for token");
+
+    const todayOrders: VolumeOrderInterface[] = [];
+
+    // loop through the interactions that have been made today
+    // and add those that have been swaps using this token
+    const loopTillToday = async (cursor?: string) => {
+      const txs = Object.keys(validity).filter((key) => validity[key]);
+      const { data } = await this.utils.arGQL(
+        `
+        query($txs: [ID!], $cursor: String) {
+          transactions(first: 100, ids: $txs, after: $cursor) {
+            edges {
+              cursor
+              node {
+                tags {
+                  name
+                  value
+                }
+                block {
+                  timestamp
+                }
+              }
+            }
+          }
+        }      
+      `,
+        { txs, cursor }
+      );
+
+      let lastCursor: string | undefined;
+
+      for (const edge of data.transactions.edges) {
+        const input = JSON.parse(
+          // @ts-expect-error | this will be defined, because it is an interaction
+          this.utils.getTagValue("Input", edge.node.tags)
+        );
+        lastCursor = edge.cursor;
+
+        // check if the input has a transfer transaction field and if it creates an order
+        if (!input?.transaction || input?.function !== "createOrder") continue;
+
+        // quit if the order was not made today and set lastCursor to undefined
+        // so that we don't self-call this function again
+        if (
+          edge.node.block.timestamp * 1000 <
+          new Date().setHours(0, 0, 0, 0)
+        ) {
+          lastCursor = undefined;
+          break;
+        }
+
+        // get the transfer tx and it's input
+        const transferTx = await this.arweave.transactions.get(
+          input.transaction
+        );
+        // @ts-expect-error | decode the tags
+        const tags = this.utils.decodeTags(transferTx.get("tags"));
+        const transferInput = JSON.parse(
+          // @ts-expect-error | this will be defined, because it is an interaction
+          this.utils.getTagValue("Input", tags)
+        );
+        const token = this.utils.getTagValue("Contract", tags);
+
+        // check if the transfer has a quantity and check if the order token is
+        // the requested
+        if (transferInput?.qty && token === id) {
+          todayOrders.push({
+            quantity: transferInput.qty,
+            // we need to multiply by 1000 to get a valid date-timestamp
+            timestamp: edge.node.block.timestamp * 1000,
+          });
+        }
+      }
+
+      if (lastCursor) loopTillToday(lastCursor);
+    };
+
+    return this.utils.calculateVolumeForDay(todayOrders, new Date());
   }
 
   // TODO: clob

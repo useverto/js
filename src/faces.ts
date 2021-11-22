@@ -92,3 +92,15 @@ export interface GlobalConfigInterface {
   CLOB_CONTRACT?: string;
   COMMUNITY_CONTRACT?: string;
 }
+
+export interface VolumeOrderInterface {
+  quantity: number;
+  timestamp: number;
+}
+
+export interface SwapPairInterface {
+  /** The token you are trading from / sending to the exchange */
+  from: string;
+  /** The token you wish to receive */
+  to: string;
+}
