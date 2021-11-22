@@ -3,7 +3,7 @@
     <img src="https://raw.githubusercontent.com/useverto/design/master/logo/logo_light.svg" alt="Verto logo (light version)" width="110" />
   </a>
 
-  <h3 align="center">Verto Library</h3>
+  <h3 align="center">Verto JS Library</h3>
 
   <p align="center">
     Integrate The Verto Exchange's protocol easily

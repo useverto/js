@@ -183,6 +183,27 @@ export default class Utils {
   }
 
   /**
+   * Calculate the volume for a given day
+   * @param orders Orders that send this token to the exchange to calculate from
+   * @param day Day to calculate for
+   * @returns Volume for the day
+   */
+  public calculateVolumeForDay(
+    orders: { quantity: number; timestamp: number }[],
+    day: Date
+  ) {
+    const dayFrom = new Date(day).setHours(0, 0, 0, 0);
+    const dayTo = new Date(day).setDate(day.getDate() + 1);
+    const ordersForDay = orders.filter(
+      (order) => dayFrom < order.timestamp && order.timestamp < dayTo
+    );
+
+    return ordersForDay
+      .map(({ quantity }) => quantity)
+      .reduce((a, b) => a + b, 0);
+  }
+
+  /**
    * Select a token holder based on their share of the
    * total supply.
    * @returns Address of the selected holder
