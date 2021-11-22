@@ -42,8 +42,9 @@ export default class Exchange {
   }
 
   /**
-   * Add a new pair to the exchange.
+   * Add a new pair to the exchange
    * @param pair A tuple of two token IDs
+   * @param tags Optional tags for the interaction
    * @returns InteractionID
    */
   async addPair(pair: TokenPair, tags: DecodedTag[] = []): Promise<string> {
@@ -86,11 +87,11 @@ export default class Exchange {
   }
 
   /**
-   * Create a swap.
-   * @param pair The two tokens to trade between. Must be an existing pair.
-   * @param amount The amount of tokens sent to the contract.
-   * @param price Optional price for the order.
-   * @param tags Optional custom tags.
+   * Create a swap
+   * @param pair The two tokens to trade between. Must be an existing pair
+   * @param amount The amount of tokens sent to the contract
+   * @param price Optional price for the order
+   * @param tags Optional custom tags
    * @returns OrderID
    */
   async swap(
@@ -158,9 +159,10 @@ export default class Exchange {
   }
 
   /**
-   * Cancel a swap.
-   * @param orderID The transaction id of the swap.
-   * @returns The transaction id of the cancel.
+   * Cancel an order. This will return the non-filled tokens for an order and
+   * remove it from the orderbook
+   * @param orderID The transaction id of the swap
+   * @returns The transaction id of the cancel
    */
   async cancel(orderID: string): Promise<string> {
     const contract = this.smartweave

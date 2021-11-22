@@ -52,7 +52,92 @@ The library supports data requests and interactions with the protocol:
 
 ### Exchange
 
-TODO
+The exchange submodule is accessible like this:
+
+```ts
+// example usage to access the swap function in the exchange submodule
+await client.exchange.swap(...);
+```
+
+#### Adding a new pair
+
+This will add a new pair to the exchange protocol.
+
+```ts
+const interactionID = await client.exchange.addPair([
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A", // token ids for the pair
+  "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+]);
+```
+
+The function takes two params:
+
+- `pair`: A tuple of two token IDs to add as a pair
+- `tags`: _Optional._ Custom tags to add to the interaction
+
+The function returns the created interaction's ID.
+
+#### Swapping between two tokens
+
+This will create a new swap between two Arweave tokens.
+
+```ts
+const interactionID = await client.exchange.swap(
+  [
+    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+  ],
+  1000
+);
+```
+
+The function takes four params:
+
+- `pair`: The two tokens to trade between. Must be an existing pair
+- `amount`: The amount of tokens sent to the contract
+- `price`: _Optional._ Price for the order
+- `tags`: _Optional._ Custom tags to add to the interaction
+
+The function returns the created interaction's ID.
+
+#### Cancelling an order
+
+This will return the non-filled tokens for an order and remove it from the orderbook.
+
+```ts
+const interactionID = await client.exchange.cancel(
+  "xUd5mtaonpfWwuyVO98wzSFZh0d6VJuIxbuTJvlwOJQ"
+);
+```
+
+The function takes one param:
+
+- `orderID`: The transaction id of the swap
+
+The function returns the created interaction's ID.
+
+#### Get the orderbook
+
+This fetches the order book for a specific token from the CLOB contract.
+
+```ts
+// for a specific token
+const tokenOrders = await client.exchange.getOrderBook(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+
+// for a token pair
+const pairOrders = await client.exchange.getOrderBook([
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+]);
+```
+
+The function takes one param:
+
+- `input`: Token contract ID or token pair tuple
+
+The function returns an array of orders.
 
 ### Token
 
