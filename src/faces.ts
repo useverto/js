@@ -65,25 +65,13 @@ export interface PriceInterface {
   type?: TokenType;
 }
 
-// TODO: remove
-
-export interface TradingPostInterface {
-  address: string;
-  balance: number;
-  stake: number;
-  time: number;
-  endpoint: string;
-}
-
 export interface OrderBookInterface {
-  txID: string;
-  amnt: number;
-  rate?: number;
-  addr: string;
-  type: string;
-  createdAt: number;
-  received: number;
-  token?: string;
+  id: string;
+  owner: string;
+  pair: TokenPair;
+  price: number;
+  filled: number;
+  quantity: number;
 }
 
 export type TokenType = "art" | "community" | "custom";

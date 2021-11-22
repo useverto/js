@@ -5,7 +5,6 @@ import {
   ExtensionOrJWK,
   OrderBookInterface,
   TokenPair,
-  TradingPostInterface,
 } from "./faces";
 import Arweave from "arweave";
 import axios from "axios";
@@ -196,31 +195,38 @@ export default class Exchange {
     return transactionID;
   }
 
-  // TODO: clob
-  // TODO: cache / no-cache
-
   /**
-   * Fetches the order book for a specific trading post and token.
-   * @param address The trading post address.
+   * Fetches the order book for a specific token from the CLOB contract.
    * @param id Token contract id.
    * @returns List of order ids, amounts, rates, & types.
    */
-  async getOrderBook(
-    address: string,
-    id: string
-  ): Promise<OrderBookInterface[]> {
-    const { data } = await axios.get(`${this.utils.endpoint}/posts/${address}`);
-    const post: TradingPostInterface = data;
-    const endpoint = post.endpoint.split("/ping")[0] + "/orders";
+  async getOrderBook(id: string): Promise<OrderBookInterface[]> {
+    // get clob contract state
+    const clobContractState: {
+      [key: string]: any;
+      pairs: {
+        pair: [string, string];
+        orders: {
+          [key: string]: any;
+        }[];
+      }[];
+    } = await this.utils.getState(this.utils.CLOB_CONTRACT);
 
-    const res = await axios.get(endpoint);
-    const orders: { token: string; orders: OrderBookInterface[] }[] = res.data;
+    // map orders
+    const allOrders: OrderBookInterface[][] = clobContractState.pairs
+      .filter(({ pair }) => pair.includes(id))
+      .map(({ pair, orders }) =>
+        orders.map((order) => ({
+          id: order.id,
+          owner: order.creator,
+          pair,
+          price: order.price,
+          filled: order.originalQuantity - order.quantity,
+          quantity: order.originalQuantity,
+        }))
+      );
 
-    const entry = orders.find((item) => item.token === id);
-    if (entry) {
-      return entry.orders;
-    } else {
-      return [];
-    }
+    // flatten orders
+    return ([] as OrderBookInterface[]).concat(...allOrders);
   }
 }
