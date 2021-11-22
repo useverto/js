@@ -245,9 +245,13 @@ export default class Token {
         }
       }
 
-      if (lastCursor) loopTillToday(lastCursor);
+      // if the last order's timestamp was still today
+      // loop one more time, there still might be some
+      // orders left to calculate into the volume
+      if (lastCursor) await loopTillToday(lastCursor);
     };
 
+    // call the volume calculator
     return this.utils.calculateVolumeForDay(todayOrders, new Date());
   }
 
