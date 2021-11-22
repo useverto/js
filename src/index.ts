@@ -32,10 +32,12 @@ export default class Verto {
    * @param arweave An optional Arweave instance.
    * @param wallet An optional Arweave keyfile.
    * @param cache Use the Verto cache.
+   * @param globalConfig An optional config for global
+   * variables, such as the contracts used by the protocol
    */
   constructor(
-    arweave?: Arweave,
     wallet?: ExtensionOrJWK,
+    arweave?: Arweave,
     cache: boolean = true,
     globalConfig?: GlobalConfigInterface
   ) {
