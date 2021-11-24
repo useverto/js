@@ -30,11 +30,11 @@ export default class Token {
 
   /**
    *
-   * @param arweave Arweave instance.
-   * @param wallet Arweave keyfile.
-   * @param cache Use the Verto cache.
-   * @param smartweave SmartWeave instance.
-   * @param utils Utils submodule.
+   * @param arweave Arweave instance
+   * @param wallet Arweave keyfile
+   * @param cache Use the Verto cache
+   * @param smartweave SmartWeave instance
+   * @param utils Utils submodule
    */
   constructor(
     arweave: Arweave,
@@ -99,9 +99,9 @@ export default class Token {
   }
 
   /**
-   * Fetches the type for a given token.
-   * @param id Token contract id.
-   * @returns The type of the token.
+   * Fetches the type for a given token
+   * @param id Token contract id
+   * @returns The type of the token
    */
   async getTokenType(id: string): Promise<TokenType | undefined> {
     if (this.cache) {
@@ -124,9 +124,9 @@ export default class Token {
   // TODO: cache / no-cache
 
   /**
-   * Fetches the latest price for a given token.
-   * @param id Token contract id.
-   * @returns The price with name & ticker, or undefined.
+   * Fetches the latest price for a given token
+   * @param id Token contract id
+   * @returns The price with name & ticker, or undefined
    */
   async getPrice(id: string): Promise<PriceInterface | undefined> {
     const res = await axios.get(`${this.utils.endpoint}/token/${id}/price`);
@@ -137,9 +137,9 @@ export default class Token {
   // TODO: cache / no-cache
 
   /**
-   * Fetches the price history for a given token.
-   * @param id Token contract id.
-   * @returns Dates mapped to prices.
+   * Fetches the price history for a given token
+   * @param id Token contract id
+   * @returns Dates mapped to prices
    */
   async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
     const res = await axios.get(
@@ -149,9 +149,9 @@ export default class Token {
   }
 
   /**
-   * Fetches the latest volume for a given token.
-   * @param id Token contract id.
-   * @returns The volume as a number.
+   * Fetches the latest volume for a given token
+   * @param id Token contract id
+   * @returns The volume as a number
    */
   async getVolume(id: string): Promise<number> {
     let validity: {
@@ -260,9 +260,9 @@ export default class Token {
   // TODO: cache / no-cache
 
   /**
-   * Fetches the volume history for a given token.
-   * @param id Token contract id.
-   * @returns Dates mapped to volumes.
+   * Fetches the volume history for a given token
+   * @param id Token contract id
+   * @returns Dates mapped to volumes
    */
   async getVolumeHistory(id: string): Promise<{ [date: string]: number }> {
     const res = await axios.get(
@@ -272,12 +272,12 @@ export default class Token {
   }
 
   /**
-   * Transfer a specified amount of tokens to another wallet.
-   * @param amount The amount of tokens.
-   * @param id Token contract id.
-   * @param target The receiving address.
+   * Transfer a specified amount of tokens to another wallet
+   * @param amount The amount of tokens
+   * @param id Token contract id
+   * @param target The receiving address
    * @param tags Optional additional tags
-   * @returns The transaction id of the transfer.
+   * @returns The transaction id of the transfer
    */
   async transfer(
     amount: number,
@@ -320,6 +320,8 @@ export default class Token {
   /**
    * List a new token on the exchange.
    * @param address The ID of the token
+   * @param type The type of the token
+   * @param tags Optional additional tags
    * @returns InteractionID
    */
   async list(

@@ -235,7 +235,45 @@ The function takes one param:
 
 The function returns the volume history of the token.
 
-TODO (next: transfer)
+#### Transfer tokens
+
+Send tokens to a target address.
+
+```ts
+const interactionID = await client.token.transfer(
+  1000,
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "XcNXJS1UcJ05rTMWPo7l8liFFTBRgL3McfFGVliIybs"
+);
+```
+
+The function takes four params:
+
+- `amount`: The amount of tokens to send
+- `id`: Token contract ID
+- `target`: Target of the transfer
+- `tags`: _Optional._ Custom tags for the interaction
+
+The function returns the created interaction's ID.
+
+#### List a token
+
+List a new token on the exchange protocol.
+
+```ts
+const interactionID = await client.token.list(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "community"
+);
+```
+
+The function takes three params:
+
+- `id`: Token contract ID
+- `type`: The type of the token
+- `tags`: _Optional._ Custom tags for the interaction
+
+The function returns the created interaction's ID.
 
 ### User
 
