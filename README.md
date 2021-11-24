@@ -1,4 +1,4 @@
-<p align="center">
+<p align="center" id="title">
   <a href="https://verto.exchange">
     <img src="https://raw.githubusercontent.com/useverto/design/master/logo/logo_light.svg" alt="Verto logo (light version)" width="110" />
   </a>
@@ -9,6 +9,27 @@
     Integrate The Verto Exchange's protocol easily
   </p>
 </p>
+
+- [Installation](#installation)
+- [Initialization](#initialization)
+- [Usage](#usage)
+  - [Exchange](#exchange)
+    - [Adding a new pair](#adding-a-new-pair)
+    - [Swapping between two tokens](#swapping-between-two-tokens)
+    - [Cancelling an order](#cancelling-an-order)
+    - [Get the orderbook](#get-the-orderbook)
+  - [Token](#token)
+    - [Get tokens](#get-tokens)
+    - [Get a token's type](#get-a-tokens-type)
+    - [Get a token's price](#get-a-tokens-price)
+    - [Get a token's price history](#get-a-tokens-price-history)
+    - [Get a token's volume](#get-a-tokens-volume)
+    - [Get a token's volume history](#get-a-tokens-volume-history)
+    - [Transfer tokens](#transfer-tokens)
+    - [List a token](#list-a-token)
+  - [User](#user)
+    - [Get user data](#get-user-data)
+- [License](#license)
 
 ## Installation
 
@@ -277,7 +298,19 @@ The function returns the created interaction's ID.
 
 ### User
 
-TODO
+#### Get user data
+
+Fetch user info for an input (address or username).
+
+```ts
+const interactionID = await client.user.getUser("martonlederer");
+```
+
+The function takes one param:
+
+- `input`: User wallet address or username
+
+The function returns the user's data (avatar, name, etc.).
 
 ## License
 
