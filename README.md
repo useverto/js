@@ -29,6 +29,9 @@
     - [List a token](#list-a-token)
   - [User](#user)
     - [Get user data](#get-user-data)
+    - [Get balance](#get-balance)
+    - [Get orders](#get-orders)
+    - [Get transactions](#get-transactions)
 - [License](#license)
 
 ## Installation
@@ -303,7 +306,7 @@ The function returns the created interaction's ID.
 Fetch user info for an input (address or username).
 
 ```ts
-const interactionID = await client.user.getUser("martonlederer");
+const userinfo = await client.user.getUser("martonlederer");
 ```
 
 The function takes one param:
@@ -311,6 +314,55 @@ The function takes one param:
 - `input`: User wallet address or username
 
 The function returns the user's data (avatar, name, etc.).
+
+#### Get balance
+
+Fetch assets for a given address.
+
+```ts
+const balances = await client.user.getBalances(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `input`: User wallet address
+
+The function returns the balances for the user.
+
+#### Get orders
+
+Fetch orders for a given address.
+
+```ts
+const orders = await client.user.getOrders(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one param:
+
+- `input`: User wallet address
+
+The function returns the orders for the user.
+
+#### Get transactions
+
+Fetch transactions for a given wallet address.
+
+```ts
+const transactions = await client.user.getTransactions(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+);
+```
+
+The function takes one params:
+
+- `input`: User wallet address
+- `after`: _Optional._ Transaction to fetch after
+
+The function returns the transactions for the user.
 
 ## License
 
