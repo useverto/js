@@ -7,7 +7,6 @@ import {
 } from "verto-cache-interface";
 import { OrderInterface, TransactionInterface, UserInterface } from "./faces";
 import Arweave from "arweave";
-import axios from "axios";
 import Utils from "./utils";
 import Token from "./token";
 
@@ -79,18 +78,40 @@ export default class User {
     } else return await fetchBalancesForAddress(address);
   }
 
-  // TODO: cache / no-cache
-
   /**
-   * Fetches the orders for a given wallet address.
-   * @param address User wallet address.
-   * @returns List of order ids, statuses, inputs, outputs, & timestamps.
+   * Fetches the orders for a given wallet address
+   * @param address User wallet address
+   * @returns List of orders
    */
   async getOrders(address: string): Promise<OrderInterface[]> {
-    const res = await axios.get(
-      `${this.utils.endpoint}/user/${address}/orders`
+    // get clob contract state
+    const clobContractState: {
+      [key: string]: any;
+      pairs: {
+        pair: [string, string];
+        orders: {
+          [key: string]: any;
+        }[];
+      }[];
+    } = await this.utils.getState(this.utils.CLOB_CONTRACT);
+
+    // map orders
+    const allOrders: OrderInterface[][] = clobContractState.pairs.map(
+      ({ pair, orders }) =>
+        orders
+          .map((order) => ({
+            id: order.id,
+            owner: order.creator,
+            pair,
+            price: order.price,
+            filled: order.originalQuantity - order.quantity,
+            quantity: order.originalQuantity,
+          }))
+          .filter(({ owner }) => owner === address)
     );
-    return res.data;
+
+    // flatten orders
+    return ([] as OrderInterface[]).concat(...allOrders);
   }
 
   /**

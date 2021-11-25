@@ -31,17 +31,6 @@ export interface BalanceInterface {
   logo?: string;
 }
 
-export interface OrderInterface {
-  id: string;
-  status: "pending" | "success" | "cancelled" | "returned";
-  sender: string;
-  target: string;
-  token: string;
-  input: string;
-  output: string;
-  timestamp: number;
-}
-
 export interface TransactionInterface {
   id: string;
   status: "success" | "pending" | "error";
@@ -65,7 +54,7 @@ export interface PriceInterface {
   type?: TokenType;
 }
 
-export interface OrderBookInterface {
+export interface OrderInterface {
   id: string;
   owner: string;
   pair: TokenPair;

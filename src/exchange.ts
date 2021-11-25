@@ -3,7 +3,7 @@ import { SmartWeave } from "redstone-smartweave";
 import {
   DecodedTag,
   ExtensionOrJWK,
-  OrderBookInterface,
+  OrderInterface,
   SwapPairInterface,
   TokenPair,
 } from "./faces";
@@ -200,7 +200,7 @@ export default class Exchange {
    * @param input Token contract ID or token pair
    * @returns List of orders
    */
-  async getOrderBook(input: string | TokenPair): Promise<OrderBookInterface[]> {
+  async getOrderBook(input: string | TokenPair): Promise<OrderInterface[]> {
     // get clob contract state
     const clobContractState: {
       [key: string]: any;
@@ -213,7 +213,7 @@ export default class Exchange {
     } = await this.utils.getState(this.utils.CLOB_CONTRACT);
 
     // map orders
-    const allOrders: OrderBookInterface[][] = clobContractState.pairs
+    const allOrders: OrderInterface[][] = clobContractState.pairs
       .filter(({ pair }) => {
         if (typeof input === "string") return pair.includes(input);
         else return pair.includes(input[0]) && pair.includes(input[1]);
@@ -230,6 +230,6 @@ export default class Exchange {
       );
 
     // flatten orders
-    return ([] as OrderBookInterface[]).concat(...allOrders);
+    return ([] as OrderInterface[]).concat(...allOrders);
   }
 }
