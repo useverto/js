@@ -1,0 +1,30 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  fmt:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "15.14.0"
+
+      - name: Prepare project
+        run: |
+          npm i -g yarn
+          npm i -g smartweave
+          yarn
+
+      - name: Deploy CLOB contract
+        run: |
+          git clone https://github.com/useverto/contracts
+          cd contracts
+          yarn
+          build
+
+      - name: Test project
+        run: yarn build
