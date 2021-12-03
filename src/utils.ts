@@ -187,7 +187,7 @@ export default class Utils {
   }
 
   /**
-   * Calculate the volume for a given day
+   * Calculate the volume for a day
    * @param orders Orders to calculate from
    * @returns Volume for the day
    */
@@ -196,19 +196,30 @@ export default class Utils {
     token: string
   ) {
     const transferTxs = orders
+      // filter txs that don't have the "input" tag,
+      // the input does not include a txID
+      // or the txID is invalid
       .filter(({ node }) => {
         const input = this.getTagValue("Input", node.tags);
 
         if (!input) return false;
-        return !!JSON.parse(input)?.transaction;
+
+        const parsedInput = JSON.parse(input);
+        if (!!parsedInput?.transaction) return false;
+        return this.validateHash(parsedInput.transaction);
       })
+      // map for the ID of the transfer that sent the
+      // tokens to the CLOB contract
       .map(({ node }) => {
         // @ts-expect-error | this is already defined
         const input = JSON.parse(this.getTagValue("Input", node.tags));
         return input.transaction;
       });
+
+    // all qtys of orders
     const validOrderQuantities: number[] = [];
 
+    // loop through transfer txs and push their qtys
     const loopTransfers = async (cursor?: string) => {
       const { data: res } = await this.arGQL(
         `
@@ -230,13 +241,18 @@ export default class Utils {
       );
 
       for (const edge of res.transactions.edges) {
+        // check the transfer
         if (this.checkIfValidOrderTransfer(edge.node, token)) {
           // @ts-expect-error | this is already defined
           const input = JSON.parse(this.getTagValue("Input", node.tags));
+
+          // push the quantity
           validOrderQuantities.push(input.qty);
         }
       }
 
+      // if there are more txs left
+      // loop with the cursor
       if (res.transactions.edges.length > 0)
         await loopTransfers(
           res.transactions.edges[res.transactions.edges.length - 1].cursor
@@ -245,6 +261,7 @@ export default class Utils {
 
     await loopTransfers();
 
+    // calculate the volume by reducing the quantity
     return validOrderQuantities.reduce((a, b) => a + b, 0);
   }
 
@@ -258,6 +275,7 @@ export default class Utils {
       // @ts-expect-error | this will be defined, because it is an interaction
       this.getTagValue("Input", node.tags)
     );
+    // the contract this interaction interacts with
     const contract = this.getTagValue("Contract", node.tags);
 
     // check if it is an interaction
@@ -277,6 +295,7 @@ export default class Utils {
    * @returns Today order or not
    */
   public checkIfTodayOrder(node: GQLNodeInterface) {
+    // compare tx block timestamp
     return node.block.timestamp * 1000 >= new Date().setHours(0, 0, 0, 0);
   }
 
@@ -293,13 +312,21 @@ export default class Utils {
     const transferInput = this.getTagValue("Input", transferTx.tags);
     const token = this.getTagValue("Contract", transferTx.tags);
 
+    // does it have the required tags
     if (!transferInput || !token) return false;
+    // does the input have a quantity
     if (JSON.parse(transferInput)?.qty) return false;
+    // token equals with the desired token?
     if (token !== orderToken) return false;
 
     return true;
   }
 
+  /**
+   * Decode tags from an arweave transaction instance
+   * @param tags Encoded tags array
+   * @returns Decoded tags array
+   */
   public decodeTags(tags: Tag[]): DecodedTag[] {
     return tags.map((tag) => ({
       name: tag.get("name", { decode: true, string: true }),
