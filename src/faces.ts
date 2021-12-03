@@ -23,14 +23,6 @@ export interface UserInterface {
   };
 }
 
-export interface BalanceInterface {
-  id: string;
-  balance: number;
-  name: string;
-  ticker: string;
-  logo?: string;
-}
-
 export interface TransactionInterface {
   id: string;
   status: "success" | "pending" | "error";
