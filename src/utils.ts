@@ -177,6 +177,37 @@ export default class Utils {
   }
 
   /**
+   * Get valdity for a contract
+   * @param contractID ID of the contract
+   * @returns Validity of the contract
+   */
+  public async getValidity(
+    contractID: string
+  ): Promise<{
+    [interactionID: string]: boolean;
+  }> {
+    let validity: {
+      [interactionID: string]: boolean;
+    };
+
+    if (this.cache) {
+      const contract = await fetchContract(contractID, true);
+
+      validity = contract?.validity;
+    } else {
+      const contract = this.smartweave
+        .contract(contractID)
+        .connect(this.wallet);
+
+      validity = (await contract.readState())?.validity;
+    }
+
+    if (!validity) throw new Error("Could not fetch validity for token");
+
+    return validity;
+  }
+
+  /**
    * Get the value for a given tag name
    * @param name Name of the tag
    * @param tags All tags to search from

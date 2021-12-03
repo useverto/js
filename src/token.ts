@@ -155,28 +155,12 @@ export default class Token {
    * @returns The volume as a number
    */
   async getVolume(id: string): Promise<number> {
-    let validity: {
-      [interactionID: string]: boolean;
-    };
-
     // get the validity for the clob contract
-    if (this.cache) {
-      const contract = await fetchContract(this.utils.CLOB_CONTRACT, true);
-
-      validity = contract?.validity;
-    } else {
-      const contract = this.smartweave
-        .contract(this.utils.CLOB_CONTRACT)
-        .connect(this.wallet);
-
-      validity = (await contract.readState())?.validity;
-    }
-
-    if (!validity) throw new Error("Could not fetch validity for token");
+    const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
 
     // loop through the interactions that have been made today
     // and add those that have been swaps using this token
-    const loopTillToday = async (
+    const loopTillYesterday = async (
       orders: GQLEdgeInterface[],
       cursor?: string
     ): Promise<GQLEdgeInterface[]> => {
@@ -219,18 +203,15 @@ export default class Token {
       if (ordersNotToday.length > 0) return orders;
       // continue loop if all orders were made today
       else
-        return await loopTillToday(
+        return await loopTillYesterday(
           orders,
           data.transactions.edges[data.transactions.edges.length - 1].cursor
         );
     };
 
     // call the volume calculator
-    return this.utils.calculateVolumeForDay(await loopTillToday([]), id);
+    return this.utils.calculateVolumeForDay(await loopTillYesterday([]), id);
   }
-
-  // TODO: clob
-  // TODO: cache / no-cache
 
   /**
    * Fetches the volume history for a given token
@@ -238,10 +219,81 @@ export default class Token {
    * @returns Dates mapped to volumes
    */
   async getVolumeHistory(id: string): Promise<{ [date: string]: number }> {
-    const res = await axios.get(
-      `${this.utils.endpoint}/token/${id}/volumeHistory`
-    );
-    return res.data;
+    // get the validity for the clob contract
+    const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
+
+    // loop through all the interactions for this token
+    const loop = async (
+      orders: GQLEdgeInterface[],
+      cursor?: string
+    ): Promise<GQLEdgeInterface[]> => {
+      const txs = Object.keys(validity).filter((key) => validity[key]);
+      const { data } = await this.utils.arGQL(
+        `
+        query($txs: [ID!], $cursor: String) {
+          transactions(first: 100, ids: $txs, after: $cursor) {
+            edges {
+              cursor
+              node {
+                tags {
+                  name
+                  value
+                }
+                block {
+                  timestamp
+                }
+              }
+            }
+          }
+        }      
+      `,
+        { txs, cursor }
+      );
+
+      const loopOrders = data.transactions.edges.filter(({ node }) =>
+        this.utils.checkIfValidOrder(node)
+      );
+
+      orders.push(...loopOrders);
+
+      // if there are no orders left
+      if (data.transactions.edges.length > 0) return orders;
+      else
+        return await loop(
+          orders,
+          data.transactions.edges[data.transactions.edges.length - 1].cursor
+        );
+    };
+
+    const txs = await loop([]);
+    const data: { [date: string]: number } = {};
+
+    // set dates from blocks
+    // TODO: fill missing dates
+    for (const tx of txs) {
+      const date = new Date(tx.node.block.timestamp * 1000);
+
+      data[
+        date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate()
+      ] = 0;
+    }
+
+    // get txs for each date
+    for (const date of Object.keys(data)) {
+      const txsForDay = txs.filter((tx) => {
+        const tomorrow = new Date(date);
+        tomorrow.setDate(new Date(date).getDate() + 1);
+
+        return (
+          tx.node.block.timestamp * 1000 >= new Date(date).getTime() &&
+          tx.node.block.timestamp * 1000 <= tomorrow.getDate()
+        );
+      });
+
+      data[date] = await this.utils.calculateVolumeForDay(txsForDay, id);
+    }
+
+    return data;
   }
 
   /**
