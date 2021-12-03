@@ -8,6 +8,7 @@ import {
 import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
 import { Tag } from "arweave/node/lib/transaction";
+import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
 import Arweave from "arweave";
 import axios from "axios";
@@ -126,6 +127,7 @@ export default class Utils {
    * @returns If the hash is valid
    */
   public validateHash(hash: string) {
+    if (typeof hash !== "string") return false;
     return /[a-z0-9_-]{43}/i.test(hash);
   }
 
@@ -186,20 +188,116 @@ export default class Utils {
 
   /**
    * Calculate the volume for a given day
-   * @param orders Orders that send this token to the exchange to calculate from
-   * @param day Day to calculate for
+   * @param orders Orders to calculate from
    * @returns Volume for the day
    */
-  public calculateVolumeForDay(orders: VolumeOrderInterface[], day: Date) {
-    const dayFrom = new Date(day).setHours(0, 0, 0, 0);
-    const dayTo = new Date(day).setDate(day.getDate() + 1);
-    const ordersForDay = orders.filter(
-      (order) => dayFrom < order.timestamp && order.timestamp < dayTo
-    );
+  public async calculateVolumeForDay(
+    orders: GQLEdgeInterface[],
+    token: string
+  ) {
+    const transferTxs = orders
+      .filter(({ node }) => {
+        const input = this.getTagValue("Input", node.tags);
 
-    return ordersForDay
-      .map(({ quantity }) => quantity)
-      .reduce((a, b) => a + b, 0);
+        if (!input) return false;
+        return !!JSON.parse(input)?.transaction;
+      })
+      .map(({ node }) => {
+        // @ts-expect-error | this is already defined
+        const input = JSON.parse(this.getTagValue("Input", node.tags));
+        return input.transaction;
+      });
+    const validOrderQuantities: number[] = [];
+
+    const loopTransfers = async (cursor?: string) => {
+      const { data: res } = await this.arGQL(
+        `
+        query($txs: [ID!], $cursor: String) {
+          transactions(first: 100, ids: $txs, after: $cursor) {
+            edges {
+              cursor
+              node {
+                tags {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }  
+      `,
+        { txs: transferTxs, cursor }
+      );
+
+      for (const edge of res.transactions.edges) {
+        if (this.checkIfValidOrderTransfer(edge.node, token)) {
+          // @ts-expect-error | this is already defined
+          const input = JSON.parse(this.getTagValue("Input", node.tags));
+          validOrderQuantities.push(input.qty);
+        }
+      }
+
+      if (res.transactions.edges.length > 0)
+        await loopTransfers(
+          res.transactions.edges[res.transactions.edges.length - 1].cursor
+        );
+    };
+
+    await loopTransfers();
+
+    return validOrderQuantities.reduce((a, b) => a + b, 0);
+  }
+
+  /**
+   * Check if an interaction tx is a valid order
+   * @param node Tx node
+   * @returns Valid order or not
+   */
+  public checkIfValidOrder(node: GQLNodeInterface) {
+    const input = JSON.parse(
+      // @ts-expect-error | this will be defined, because it is an interaction
+      this.getTagValue("Input", node.tags)
+    );
+    const contract = this.getTagValue("Contract", node.tags);
+
+    // check if it is an interaction
+    if (!contract || !this.validateHash(contract)) return false;
+
+    // if no transfer tx is provided or
+    // the function is not "createOrder"
+    // this is not an order
+    if (!input?.transaction || input?.function !== "createOrder") return false;
+
+    return true;
+  }
+
+  /**
+   * Check if the order was made today
+   * @param node Tx node
+   * @returns Today order or not
+   */
+  public checkIfTodayOrder(node: GQLNodeInterface) {
+    return node.block.timestamp * 1000 >= new Date().setHours(0, 0, 0, 0);
+  }
+
+  /**
+   * Check if the transfer for an order is valid
+   * @param transferTx The transfer tx node
+   * @param orderToken The token ID for the order
+   * @returns Valid transfer or not
+   */
+  public checkIfValidOrderTransfer(
+    transferTx: GQLNodeInterface,
+    orderToken: string
+  ) {
+    const transferInput = this.getTagValue("Input", transferTx.tags);
+    const token = this.getTagValue("Contract", transferTx.tags);
+
+    if (!transferInput || !token) return false;
+    if (JSON.parse(transferInput)?.qty) return false;
+    if (token !== orderToken) return false;
+
+    return true;
   }
 
   public decodeTags(tags: Tag[]): DecodedTag[] {

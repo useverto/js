@@ -16,6 +16,7 @@ import {
   TokenType,
   VolumeOrderInterface,
 } from "./faces";
+import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { SmartWeave } from "redstone-smartweave";
 import Arweave from "arweave";
 import axios from "axios";
@@ -173,11 +174,12 @@ export default class Token {
 
     if (!validity) throw new Error("Could not fetch validity for token");
 
-    const todayOrders: VolumeOrderInterface[] = [];
-
     // loop through the interactions that have been made today
     // and add those that have been swaps using this token
-    const loopTillToday = async (cursor?: string) => {
+    const loopTillToday = async (
+      orders: GQLEdgeInterface[],
+      cursor?: string
+    ): Promise<GQLEdgeInterface[]> => {
       const txs = Object.keys(validity).filter((key) => validity[key]);
       const { data } = await this.utils.arGQL(
         `
@@ -201,59 +203,30 @@ export default class Token {
         { txs, cursor }
       );
 
-      let lastCursor: string | undefined;
+      const ordersNotToday = data.transactions.edges.filter(
+        ({ node }) => !this.utils.checkIfTodayOrder(node)
+      );
+      const ordersToday = data.transactions.edges.filter(
+        ({ node }) =>
+          this.utils.checkIfTodayOrder(node) &&
+          this.utils.checkIfValidOrder(node)
+      );
 
-      for (const edge of data.transactions.edges) {
-        const input = JSON.parse(
-          // @ts-expect-error | this will be defined, because it is an interaction
-          this.utils.getTagValue("Input", edge.node.tags)
+      orders.push(...ordersToday);
+
+      // if there are orders that were
+      // not made today return
+      if (ordersNotToday.length > 0) return orders;
+      // continue loop if all orders were made today
+      else
+        return await loopTillToday(
+          orders,
+          data.transactions.edges[data.transactions.edges.length - 1].cursor
         );
-        lastCursor = edge.cursor;
-
-        // check if the input has a transfer transaction field and if it creates an order
-        if (!input?.transaction || input?.function !== "createOrder") continue;
-
-        // quit if the order was not made today and set lastCursor to undefined
-        // so that we don't self-call this function again
-        if (
-          edge.node.block.timestamp * 1000 <
-          new Date().setHours(0, 0, 0, 0)
-        ) {
-          lastCursor = undefined;
-          break;
-        }
-
-        // get the transfer tx and it's input
-        const transferTx = await this.arweave.transactions.get(
-          input.transaction
-        );
-        // @ts-expect-error | decode the tags
-        const tags = this.utils.decodeTags(transferTx.get("tags"));
-        const transferInput = JSON.parse(
-          // @ts-expect-error | this will be defined, because it is an interaction
-          this.utils.getTagValue("Input", tags)
-        );
-        const token = this.utils.getTagValue("Contract", tags);
-
-        // check if the transfer has a quantity and check if the order token is
-        // the requested
-        if (transferInput?.qty && token === id) {
-          todayOrders.push({
-            quantity: transferInput.qty,
-            // we need to multiply by 1000 to get a valid date-timestamp
-            timestamp: edge.node.block.timestamp * 1000,
-          });
-        }
-      }
-
-      // if the last order's timestamp was still today
-      // loop one more time, there still might be some
-      // orders left to calculate into the volume
-      if (lastCursor) await loopTillToday(lastCursor);
     };
 
     // call the volume calculator
-    return this.utils.calculateVolumeForDay(todayOrders, new Date());
+    return this.utils.calculateVolumeForDay(await loopTillToday([]), id);
   }
 
   // TODO: clob
