@@ -85,3 +85,8 @@ export interface SwapPairInterface {
   /** The token you wish to receive */
   to: string;
 }
+
+export interface VolumeData {
+  date: string;
+  data: number;
+}

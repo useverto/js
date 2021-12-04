@@ -2,7 +2,6 @@ import {
   cacheContractHook,
   CommunityContractState,
   CommunityContractToken,
-  fetchContract,
   fetchTokenMetadata,
   fetchTokens,
   fetchTokenStateMetadata,
@@ -14,9 +13,9 @@ import {
   PriceInterface,
   TokenInterface,
   TokenType,
-  VolumeOrderInterface,
+  VolumeData,
 } from "./faces";
-import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
+import { GQLEdgeInterface } from "ar-gql/dist/faces";
 import { SmartWeave } from "redstone-smartweave";
 import Arweave from "arweave";
 import axios from "axios";
@@ -218,7 +217,7 @@ export default class Token {
    * @param id Token contract id
    * @returns Dates mapped to volumes
    */
-  async getVolumeHistory(id: string): Promise<{ [date: string]: number }> {
+  async getVolumeHistory(id: string): Promise<VolumeData[]> {
     // get the validity for the clob contract
     const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
 
@@ -266,18 +265,22 @@ export default class Token {
     };
 
     const txs = await loop([]);
-    const data: { [date: string]: number } = {};
+    const data: VolumeData[] = [];
+    const dates: string[] = [];
 
     // set dates from blocks
-    // TODO: fill missing dates
     for (const tx of txs) {
       const date = new Date(tx.node.block.timestamp * 1000);
+      const formattedDate = this.utils.formateDate(date);
 
-      data[this.utils.formateDate(date)] = 0;
+      if (!dates.includes(formattedDate)) dates.push(formattedDate);
     }
 
+    // sort dates array
+    dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
     // get txs for each date
-    for (const date of Object.keys(data)) {
+    for (const date in data) {
       const txsForDay = txs.filter((tx) => {
         const tomorrow = new Date(date);
         tomorrow.setDate(new Date(date).getDate() + 1);
@@ -288,8 +291,36 @@ export default class Token {
         );
       });
 
-      data[date] = await this.utils.calculateVolumeForDay(txsForDay, id);
+      data.push({
+        date,
+        data: await this.utils.calculateVolumeForDay(txsForDay, id),
+      });
     }
+
+    // fill missing days with 0 volume
+    for (let i = 0; i < dates.length; i++) {
+      const nextDate = dates[i + 1];
+
+      // break if no next dates are available in the volume array
+      if (!nextDate) break;
+
+      const date = dates[i];
+      const loopDate = new Date(date);
+
+      // loop till the next date
+      while (this.utils.formateDate(loopDate) !== nextDate) {
+        loopDate.setDate(new Date(loopDate).getDate() + 1);
+        data.push({
+          date: this.utils.formateDate(loopDate),
+          data: 0,
+        });
+      }
+    }
+
+    // sort data by dates
+    data.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
 
     return data;
   }
