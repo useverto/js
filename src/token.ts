@@ -10,10 +10,11 @@ import {
 import {
   DecodedTag,
   ExtensionOrJWK,
-  PriceInterface,
   TokenInterface,
   TokenType,
   VolumeData,
+  PriceData,
+  TokenPair,
 } from "./faces";
 import { GQLEdgeInterface } from "ar-gql/dist/faces";
 import { SmartWeave } from "redstone-smartweave";
@@ -123,12 +124,20 @@ export default class Token {
   // TODO: clob
   // TODO: cache / no-cache
 
+  // TODO: to get the price,
+  // loop through all the orders for that token pair
+  // all the orders will calculate the price
+  // for the price history, we can just stop after
+  // each day, calculate the price till that day
+  // (by only using the existing data) and push
+  // the calculated price to an array with dates
+
   /**
    * Fetches the latest price for a given token
    * @param id Token contract id
-   * @returns The price with name & ticker, or undefined
+   * @returns Token price for the **first item in the pair**
    */
-  async getPrice(id: string): Promise<PriceInterface | undefined> {
+  async getPrice(pair: TokenPair): Promise<number | undefined> {
     const res = await axios.get(`${this.utils.endpoint}/token/${id}/price`);
     return res.data;
   }
@@ -139,9 +148,9 @@ export default class Token {
   /**
    * Fetches the price history for a given token
    * @param id Token contract id
-   * @returns Dates mapped to prices
+   * @returns Token prices for the **first item in the pair** mapped with dates
    */
-  async getPriceHistory(id: string): Promise<{ [date: string]: number }> {
+  async getPriceHistory(pair: TokenPair): Promise<PriceData[]> {
     const res = await axios.get(
       `${this.utils.endpoint}/token/${id}/priceHistory`
     );

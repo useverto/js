@@ -39,13 +39,6 @@ export interface TokenInterface {
   ticker: string;
 }
 
-export interface PriceInterface {
-  price: number;
-  name: string;
-  ticker: string;
-  type?: TokenType;
-}
-
 export interface OrderInterface {
   id: string;
   owner: string;
@@ -90,3 +83,5 @@ export interface VolumeData {
   date: string;
   data: number;
 }
+
+export type PriceData = VolumeData;
