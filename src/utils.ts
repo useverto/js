@@ -366,6 +366,26 @@ export default class Utils {
   }
 
   /**
+   * Format a date
+   * @param date Date in milliseconds or *Date*
+   * @returns Formatted date
+   */
+  public formateDate(date: number | Date) {
+    let dateInst: Date;
+
+    if (typeof date === "number") dateInst = new Date(date);
+    else dateInst = date;
+
+    return (
+      dateInst.getFullYear() +
+      "-" +
+      ("0" + (dateInst.getMonth() + 1)).slice(-2) +
+      "-" +
+      ("0" + dateInst.getDate()).slice(-2)
+    );
+  }
+
+  /**
    * Select a token holder based on their share of the
    * total supply.
    * @returns Address of the selected holder

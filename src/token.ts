@@ -245,7 +245,7 @@ export default class Token {
               }
             }
           }
-        }      
+        }
       `,
         { txs, cursor }
       );
@@ -273,9 +273,7 @@ export default class Token {
     for (const tx of txs) {
       const date = new Date(tx.node.block.timestamp * 1000);
 
-      data[
-        date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate()
-      ] = 0;
+      data[this.utils.formateDate(date)] = 0;
     }
 
     // get txs for each date
