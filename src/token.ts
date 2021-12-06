@@ -143,44 +143,82 @@ export default class Token {
     pair: TokenPair,
     region: [Date, Date]
   ): Promise<number | undefined> {
-    const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
-    const orders = (await this.utils.loopOrdersForToday(validity)).filter(
-      (edge) => {
-        const blockDate = this.utils.blockTimestampToMs(
-          edge.node.block.timestamp
-        );
-
-        // return false if not between the two dates
-        if (
-          blockDate < region[0].getTime() ||
-          blockDate > region[1].getTime()
-        ) {
-          return false;
+    let contractData:
+      | {
+          state: any;
+          validity: ValidityInterface;
         }
+      | undefined;
 
-        // return false if interaction is not an order
-        if (!this.utils.checkIfValidOrder(edge.node)) return false;
+    // load from cache
+    if (this.cache) {
+      contractData = await fetchContract(this.utils.CLOB_CONTRACT, true);
+    }
 
-        const input = JSON.parse(
-          // @ts-expect-error | Defined for interactions
-          this.utils.getTagValue("Input", edge.node.tags)
-        );
+    // load from contract if cache is disabled
+    // or if the cache did not return anything
+    if (!this.cache || !contractData) {
+      const contract = this.smartweave
+        .contract(this.utils.CLOB_CONTRACT)
+        .connect(this.wallet);
 
-        // check if the pair of the order is the same as the pair supplied
-        if (!input.pair.includes(pair[0]) || !input.pair.includes(pair[1]))
-          return false;
+      contractData = await contract.readState();
+    }
 
-        // return if the token that the order is for is not the second one
-        // because the orders needed for the price calculation of the first
-        // token in the pair have to have the second token sent and the first
-        // token bought
-        if (input?.token !== pair[1]) return false;
+    const orders = (
+      await this.utils.loopOrdersForToday(contractData.validity)
+    ).filter((edge) => {
+      const blockDate = this.utils.blockTimestampToMs(
+        edge.node.block.timestamp
+      );
 
-        return (
-          blockDate >= region[0].getTime() && blockDate <= region[1].getTime()
-        );
+      // return false if not between the two dates
+      if (blockDate < region[0].getTime() || blockDate > region[1].getTime()) {
+        return false;
       }
-    );
+
+      // return false if interaction is not an order
+      if (!this.utils.checkIfValidOrder(edge.node)) return false;
+
+      // "createOrder" interaction
+      const interaction = JSON.parse(
+        // @ts-expect-error | Defined for interactions
+        this.utils.getTagValue("Input", edge.node.tags)
+      );
+
+      // check if the pair of the order is the same as the pair supplied
+      if (
+        !interaction.pair.includes(pair[0]) ||
+        !interaction.pair.includes(pair[1])
+      )
+        return false;
+
+      // return false if the token that the order is for is not the second
+      // one because the orders needed for the price calculation of the
+      // first token in the pair have to have the second token sent and
+      // the first token bought
+      if (interaction?.token !== pair[1]) return false;
+
+      // return false if the order have not matched with any orders
+      // (the quantity equals to the originalQuantity)
+      const ordersState = contractData?.state?.pairs?.find(
+        (pairData: any) =>
+          pairData.pair.includes(pair[0]) && pairData.pair.includes(pair[1])
+      );
+      const order = ordersState?.orders?.find(
+        ({ id }: any) => id === edge.node.id
+      );
+
+      if (!!order && order.quantity === order.originalQuantity) return false;
+
+      // return false if the order doesn't have a price (market order)
+      // (we only need limit orders for prices)
+      if (!interaction?.price) return false;
+
+      return (
+        blockDate >= region[0].getTime() && blockDate <= region[1].getTime()
+      );
+    });
 
     return this.utils.calculatePriceSum(orders);
   }
