@@ -201,15 +201,20 @@ Fetches the price of a given token.
 
 ```ts
 const price = await client.token.getPrice(
-  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+  [
+    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+  ],
+  [new Date("2021-12-6"), new Date("2021-12-7")]
 );
 ```
 
 The function takes one param:
 
-- `id`: Token contract id
+- `pair`: Pairs to calculate price from. (One token of the first token = X tokens of the second)
+- `region`: Two dates to _fetch and average_ the price between `[from, to]`
 
-The function returns the price of the token.
+The function returns the token price for the **first item in the pair** averaged between the two dates.
 
 #### Get a token's price history
 
@@ -217,15 +222,20 @@ Fetches the price history of a given token.
 
 ```ts
 const history = await client.token.getPriceHistory(
-  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+  [
+    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+  ],
+  [new Date("2021-06-7"), new Date("2021-12-7")]
 );
 ```
 
 The function takes one param:
 
-- `id`: Token contract id
+- `pair`: Token contract id
+- `region`: Two dates to return prices between
 
-The function returns the price history of the token.
+The function returns token prices for the **first item in the pair** between the two dates mapped with dates.
 
 #### Get a token's volume
 

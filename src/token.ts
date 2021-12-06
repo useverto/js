@@ -133,8 +133,8 @@ export default class Token {
 
   /**
    * Fetches the latest price for a given token
-   * @param id Token contract id.
-   * One token of the first token = X tokens of the first
+   * @param pair Pairs to calculate price from.
+   * One token of the first token = X tokens of the second
    * @param region Two dates to *fetch and average* the price between [from, to]
    * @returns Token price for the **first item in the pair** averaged
    * between the two dates
@@ -228,8 +228,8 @@ export default class Token {
 
   /**
    * Fetches the price history for a given token
-   * @param id Token contract id.
-   * One token of the first token = X tokens of the first
+   * @param pair Pairs to calculate price from.
+   * One token of the first token = X tokens of the second
    * @param region Two dates to return prices between
    * @returns Token prices for the **first item in the pair**
    * between the two dates mapped with dates
