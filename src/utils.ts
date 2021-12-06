@@ -4,7 +4,6 @@ import {
   GlobalConfigInterface,
   ValidityInterface,
   VaultInterface,
-  VolumeOrderInterface,
 } from "./faces";
 import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
@@ -435,6 +434,33 @@ export default class Utils {
       "-" +
       ("0" + dateInst.getDate()).slice(-2)
     );
+  }
+
+  /**
+   * Calculate price average from orders
+   * @param orders Orders array to calculate from
+   * @returns Price calculated
+   */
+  public calculatePriceSum(orders: GQLEdgeInterface[]) {
+    const prices = orders.map(
+      ({ node }) =>
+        // @ts-expect-error | Already defined
+        JSON.parse(this.getTagValue("Input", node.tags)).price
+    );
+
+    const sum = prices.reduce((a, b) => a + b, 0);
+
+    return sum / prices.length || 0;
+  }
+
+  /**
+   * Returns a fixed milliseconds timestmap from
+   * block timestamps
+   * @param val Block timestamps
+   * @returns Milliseconds
+   */
+  public blockTimestampToMs(val: number) {
+    return val * 1000;
   }
 
   /**

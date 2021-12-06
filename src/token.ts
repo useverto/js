@@ -2,6 +2,7 @@ import {
   cacheContractHook,
   CommunityContractState,
   CommunityContractToken,
+  fetchContract,
   fetchTokenMetadata,
   fetchTokens,
   fetchTokenStateMetadata,
@@ -122,9 +123,6 @@ export default class Token {
     }
   }
 
-  // TODO: clob
-  // TODO: cache / no-cache
-
   // TODO: to get the price,
   // loop through all the orders for that token pair
   // all the orders will calculate the price
@@ -137,7 +135,7 @@ export default class Token {
    * Fetches the latest price for a given token
    * @param id Token contract id.
    * One token of the first token = X tokens of the first
-   * @param region Two dates to *fetch and average* the price between
+   * @param region Two dates to *fetch and average* the price between [from, to]
    * @returns Token price for the **first item in the pair** averaged
    * between the two dates
    */
@@ -145,8 +143,46 @@ export default class Token {
     pair: TokenPair,
     region: [Date, Date]
   ): Promise<number | undefined> {
-    // get the validity for the clob contract
     const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
+    const orders = (await this.utils.loopOrdersForToday(validity)).filter(
+      (edge) => {
+        const blockDate = this.utils.blockTimestampToMs(
+          edge.node.block.timestamp
+        );
+
+        // return false if not between the two dates
+        if (
+          blockDate < region[0].getTime() ||
+          blockDate > region[1].getTime()
+        ) {
+          return false;
+        }
+
+        // return false if interaction is not an order
+        if (!this.utils.checkIfValidOrder(edge.node)) return false;
+
+        const input = JSON.parse(
+          // @ts-expect-error | Defined for interactions
+          this.utils.getTagValue("Input", edge.node.tags)
+        );
+
+        // check if the pair of the order is the same as the pair supplied
+        if (!input.pair.includes(pair[0]) || !input.pair.includes(pair[1]))
+          return false;
+
+        // return if the token that the order is for is not the second one
+        // because the orders needed for the price calculation of the first
+        // token in the pair have to have the second token sent and the first
+        // token bought
+        if (input?.token !== pair[1]) return false;
+
+        return (
+          blockDate >= region[0].getTime() && blockDate <= region[1].getTime()
+        );
+      }
+    );
+
+    return this.utils.calculatePriceSum(orders);
   }
 
   // TODO: clob
@@ -246,7 +282,9 @@ export default class Token {
 
     // set dates from blocks
     for (const tx of txs) {
-      const date = new Date(tx.node.block.timestamp * 1000);
+      const date = new Date(
+        this.utils.blockTimestampToMs(tx.node.block.timestamp)
+      );
       const formattedDate = this.utils.formateDate(date);
 
       if (!dates.includes(formattedDate)) dates.push(formattedDate);
@@ -262,8 +300,10 @@ export default class Token {
         tomorrow.setDate(new Date(date).getDate() + 1);
 
         return (
-          tx.node.block.timestamp * 1000 >= new Date(date).getTime() &&
-          tx.node.block.timestamp * 1000 <= tomorrow.getDate()
+          this.utils.blockTimestampToMs(tx.node.block.timestamp) >=
+            new Date(date).getTime() &&
+          this.utils.blockTimestampToMs(tx.node.block.timestamp) <=
+            tomorrow.getTime()
         );
       });
 
