@@ -134,10 +134,16 @@ export default class Token {
 
   /**
    * Fetches the latest price for a given token
-   * @param id Token contract id
-   * @returns Token price for the **first item in the pair**
+   * @param id Token contract id.
+   * One token of the first token = X tokens of the first
+   * @param region Two dates to *fetch and average* the price between
+   * @returns Token price for the **first item in the pair** averaged
+   * between the two dates
    */
-  async getPrice(pair: TokenPair): Promise<number | undefined> {
+  async getPrice(
+    pair: TokenPair,
+    region: [Date, Date]
+  ): Promise<number | undefined> {
     const res = await axios.get(`${this.utils.endpoint}/token/${id}/price`);
     return res.data;
   }
@@ -147,10 +153,16 @@ export default class Token {
 
   /**
    * Fetches the price history for a given token
-   * @param id Token contract id
-   * @returns Token prices for the **first item in the pair** mapped with dates
+   * @param id Token contract id.
+   * One token of the first token = X tokens of the first
+   * @param region Two dates to return prices between
+   * @returns Token prices for the **first item in the pair**
+   * between the two dates mapped with dates
    */
-  async getPriceHistory(pair: TokenPair): Promise<PriceData[]> {
+  async getPriceHistory(
+    pair: TokenPair,
+    region: [Date, Date]
+  ): Promise<PriceData[]> {
     const res = await axios.get(
       `${this.utils.endpoint}/token/${id}/priceHistory`
     );
