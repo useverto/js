@@ -19,8 +19,6 @@ export default class Utils {
   private smartweave: SmartWeave;
   private cache: boolean;
 
-  // TODO: remove
-  public endpoint = "https://v2.cache.verto.exchange";
   public EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
   public EXCHANGE_CONTRACT = "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A";
   public CLOB_CONTRACT = ""; // TODO

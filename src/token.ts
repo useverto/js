@@ -238,10 +238,7 @@ export default class Token {
     pair: TokenPair,
     region: [Date, Date]
   ): Promise<PriceData[]> {
-    const res = await axios.get(
-      `${this.utils.endpoint}/token/${id}/priceHistory`
-    );
-    return res.data;
+    return [];
   }
 
   /**
