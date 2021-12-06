@@ -85,3 +85,7 @@ export interface VolumeData {
 }
 
 export type PriceData = VolumeData;
+
+export interface ValidityInterface {
+  [interactionID: string]: boolean;
+}

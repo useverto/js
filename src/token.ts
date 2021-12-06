@@ -15,6 +15,7 @@ import {
   VolumeData,
   PriceData,
   TokenPair,
+  ValidityInterface,
 } from "./faces";
 import { GQLEdgeInterface } from "ar-gql/dist/faces";
 import { SmartWeave } from "redstone-smartweave";
@@ -144,8 +145,8 @@ export default class Token {
     pair: TokenPair,
     region: [Date, Date]
   ): Promise<number | undefined> {
-    const res = await axios.get(`${this.utils.endpoint}/token/${id}/price`);
-    return res.data;
+    // get the validity for the clob contract
+    const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
   }
 
   // TODO: clob
@@ -178,59 +179,13 @@ export default class Token {
     // get the validity for the clob contract
     const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
 
-    // loop through the interactions that have been made today
-    // and add those that have been swaps using this token
-    const loopTillYesterday = async (
-      orders: GQLEdgeInterface[],
-      cursor?: string
-    ): Promise<GQLEdgeInterface[]> => {
-      const txs = Object.keys(validity).filter((key) => validity[key]);
-      const { data } = await this.utils.arGQL(
-        `
-        query($txs: [ID!], $cursor: String) {
-          transactions(first: 100, ids: $txs, after: $cursor) {
-            edges {
-              cursor
-              node {
-                tags {
-                  name
-                  value
-                }
-                block {
-                  timestamp
-                }
-              }
-            }
-          }
-        }      
-      `,
-        { txs, cursor }
-      );
-
-      const ordersNotToday = data.transactions.edges.filter(
-        ({ node }) => !this.utils.checkIfTodayOrder(node)
-      );
-      const ordersToday = data.transactions.edges.filter(
-        ({ node }) =>
-          this.utils.checkIfTodayOrder(node) &&
-          this.utils.checkIfValidOrder(node)
-      );
-
-      orders.push(...ordersToday);
-
-      // if there are orders that were
-      // not made today return
-      if (ordersNotToday.length > 0) return orders;
-      // continue loop if all orders were made today
-      else
-        return await loopTillYesterday(
-          orders,
-          data.transactions.edges[data.transactions.edges.length - 1].cursor
-        );
-    };
-
     // call the volume calculator
-    return this.utils.calculateVolumeForDay(await loopTillYesterday([]), id);
+    return this.utils.calculateVolumeForDay(
+      // loop through the interactions that have been made today
+      // and add those that have been swaps using this token
+      await this.utils.loopOrdersForToday(validity),
+      id
+    );
   }
 
   /**

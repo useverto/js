@@ -2,6 +2,7 @@ import {
   DecodedTag,
   ExtensionOrJWK,
   GlobalConfigInterface,
+  ValidityInterface,
   VaultInterface,
   VolumeOrderInterface,
 } from "./faces";
@@ -181,14 +182,8 @@ export default class Utils {
    * @param contractID ID of the contract
    * @returns Validity of the contract
    */
-  public async getValidity(
-    contractID: string
-  ): Promise<{
-    [interactionID: string]: boolean;
-  }> {
-    let validity: {
-      [interactionID: string]: boolean;
-    };
+  public async getValidity(contractID: string): Promise<ValidityInterface> {
+    let validity: ValidityInterface;
 
     if (this.cache) {
       const contract = await fetchContract(contractID, true);
@@ -215,6 +210,63 @@ export default class Utils {
    */
   public getTagValue(name: string, tags: DecodedTag[]) {
     return tags.find((tag) => tag.name === name)?.value;
+  }
+
+  /**
+   * Loop through all orders today
+   * @param validity Validity object for the CLOB contract.
+   * Contains the IDs for interactions to scan.
+   * @param orders Initial orders array
+   * @param cursor Loop after
+   * @returns List of valid order interactions for today
+   */
+  public async loopOrdersForToday(
+    validity: ValidityInterface,
+    orders: GQLEdgeInterface[] = [],
+    cursor?: string
+  ): Promise<GQLEdgeInterface[]> {
+    const txs = Object.keys(validity).filter((key) => validity[key]);
+    const { data } = await this.arGQL(
+      `
+      query($txs: [ID!], $cursor: String) {
+        transactions(first: 100, ids: $txs, after: $cursor) {
+          edges {
+            cursor
+            node {
+              tags {
+                name
+                value
+              }
+              block {
+                timestamp
+              }
+            }
+          }
+        }
+      }      
+    `,
+      { txs, cursor }
+    );
+
+    const ordersNotToday = data.transactions.edges.filter(
+      ({ node }) => !this.checkIfTodayOrder(node)
+    );
+    const ordersToday = data.transactions.edges.filter(
+      ({ node }) => this.checkIfTodayOrder(node) && this.checkIfValidOrder(node)
+    );
+
+    orders.push(...ordersToday);
+
+    // if there are orders that were
+    // not made today return
+    if (ordersNotToday.length > 0) return orders;
+    // continue loop if all orders were made today
+    else
+      return await this.loopOrdersForToday(
+        validity,
+        orders,
+        data.transactions.edges[data.transactions.edges.length - 1].cursor
+      );
   }
 
   /**
