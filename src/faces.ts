@@ -81,7 +81,7 @@ export interface SwapPairInterface {
 
 export interface VolumeData {
   date: string;
-  data: number;
+  value: number;
 }
 
 export type PriceData = VolumeData;

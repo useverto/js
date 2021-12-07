@@ -21,7 +21,6 @@ import {
 import { GQLEdgeInterface } from "ar-gql/dist/faces";
 import { SmartWeave } from "redstone-smartweave";
 import Arweave from "arweave";
-import axios from "axios";
 import Utils from "./utils";
 
 export default class Token {
@@ -165,23 +164,9 @@ export default class Token {
       contractData = await contract.readState();
     }
 
-    const from = new Date();
-    from.setHours(0, 0, 0, 0);
-
-    const to = this.utils.tomorrow(from);
-
     const orders = (
-      await this.utils.loopOrders(contractData.validity, [from, to])
+      await this.utils.loopOrders(contractData.validity, region)
     ).filter((edge) => {
-      const blockDate = this.utils.blockTimestampToMs(
-        edge.node.block.timestamp
-      );
-
-      // return false if not between the two dates
-      if (!this.utils.checkIfBetween(new Date(blockDate), region)) {
-        return false;
-      }
-
       // return false if interaction is not an order
       if (!this.utils.checkIfValidOrder(edge.node)) return false;
 
@@ -218,11 +203,7 @@ export default class Token {
 
       // return false if the order doesn't have a price (market order)
       // (we only need limit orders for prices)
-      if (!interaction?.price) return false;
-
-      return (
-        blockDate >= region[0].getTime() && blockDate <= region[1].getTime()
-      );
+      return !!interaction?.price;
     });
 
     return this.utils.calculatePriceSum(orders);
@@ -244,7 +225,88 @@ export default class Token {
     pair: TokenPair,
     region?: [Date, Date]
   ): Promise<PriceData[]> {
-    return [];
+    let contractData:
+      | {
+          state: any;
+          validity: ValidityInterface;
+        }
+      | undefined;
+
+    // load from cache
+    if (this.cache) {
+      contractData = await fetchContract(this.utils.CLOB_CONTRACT, true);
+    }
+
+    // load from contract if cache is disabled
+    // or if the cache did not return anything
+    if (!this.cache || !contractData) {
+      const contract = this.smartweave
+        .contract(this.utils.CLOB_CONTRACT)
+        .connect(this.wallet);
+
+      contractData = await contract.readState();
+    }
+
+    const orders = (
+      await this.utils.loopOrders(contractData.validity, region)
+    ).filter((edge) => {
+      // return false if interaction is not an order
+      if (!this.utils.checkIfValidOrder(edge.node)) return false;
+
+      // "createOrder" interaction
+      const interaction = JSON.parse(
+        // @ts-expect-error | Defined for interactions
+        this.utils.getTagValue("Input", edge.node.tags)
+      );
+
+      // check if the pair of the order is the same as the pair supplied
+      if (
+        !interaction.pair.includes(pair[0]) ||
+        !interaction.pair.includes(pair[1])
+      )
+        return false;
+
+      // return false if the token that the order is for is not the second
+      // one because the orders needed for the price calculation of the
+      // first token in the pair have to have the second token sent and
+      // the first token bought
+      if (interaction?.token !== pair[1]) return false;
+
+      // return false if the order doesn't have a price (market order)
+      // (we only need limit orders for prices)
+      return !!interaction?.price;
+    });
+
+    const days: Record<string, number[]> = {};
+    const prices: PriceData[] = [];
+
+    // map days and prices for them
+    for (const order of orders) {
+      const blockTime = new Date(
+        this.utils.blockTimestampToMs(order.node.block.timestamp)
+      );
+      // existing day data or new array
+      const val = days[this.utils.formateDate(blockTime)] || [];
+      const interaction = JSON.parse(
+        // @ts-expect-error | Defined for interactions
+        this.utils.getTagValue("Input", edge.node.tags)
+      );
+
+      days[this.utils.formateDate(blockTime)] = [...val, interaction.price];
+    }
+
+    // calculate price sum for each day
+    for (const day in days) {
+      const sum = days[day].reduce((a, b) => a + b, 0);
+
+      // push price
+      prices.push({
+        date: day,
+        value: sum / days[day].length || 0,
+      });
+    }
+
+    return prices;
   }
 
   /**
@@ -353,7 +415,7 @@ export default class Token {
 
       data.push({
         date,
-        data: await this.utils.calculateVolumeForDay(txsForDay, id),
+        value: await this.utils.calculateVolumeForDay(txsForDay, id),
       });
     }
 
@@ -372,7 +434,7 @@ export default class Token {
         loopDate.setDate(new Date(loopDate).getDate() + 1);
         data.push({
           date: this.utils.formateDate(loopDate),
-          data: 0,
+          value: 0,
         });
       }
     }
