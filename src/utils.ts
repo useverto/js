@@ -249,14 +249,16 @@ export default class Utils {
     );
 
     if (between) {
-      // TODO: between dates
-      // if we only need to get orders between two dates, filter
-      const ordersNotBetween = data.transactions.edges.filter(
-        ({ node }) => !this.checkIfTodayOrder(node)
-      );
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tomorrow = this.tomorrow(today);
+      const blockDate = (node: GQLNodeInterface) =>
+        new Date(this.blockTimestampToMs(node.block.timestamp));
       const ordersBetween = data.transactions.edges.filter(
         ({ node }) =>
-          this.checkIfTodayOrder(node) && this.checkIfValidOrder(node)
+          this.checkIfBetween(blockDate(node), [today, tomorrow]) &&
+          this.checkIfValidOrder(node)
       );
 
       orders.push(...ordersBetween);
@@ -384,13 +386,16 @@ export default class Utils {
   }
 
   /**
-   * Check if the order was made today
-   * @param node Tx node
-   * @returns Today order or not
+   * Check if date is between two dates
+   * @param date Date to check
+   * @param region From - to
+   * @returns Between or not
    */
-  public checkIfTodayOrder(node: GQLNodeInterface) {
-    // compare tx block timestamp
-    return node.block.timestamp * 1000 >= new Date().setHours(0, 0, 0, 0);
+  public checkIfBetween(date: Date, region: [Date, Date]) {
+    return (
+      date.getTime() >= region[0].getTime() &&
+      date.getTime() <= region[1].getTime()
+    );
   }
 
   /**

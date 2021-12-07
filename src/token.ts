@@ -178,7 +178,7 @@ export default class Token {
       );
 
       // return false if not between the two dates
-      if (blockDate < region[0].getTime() || blockDate > region[1].getTime()) {
+      if (!this.utils.checkIfBetween(new Date(blockDate), region)) {
         return false;
       }
 
