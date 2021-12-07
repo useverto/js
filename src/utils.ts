@@ -210,15 +210,18 @@ export default class Utils {
   }
 
   /**
-   * Loop through all orders today
+   * Loop through all orders
    * @param validity Validity object for the CLOB contract.
    * Contains the IDs for interactions to scan.
+   * @param between Only loop orders between two dates. (use
+   * undefined to loop through all orders)
    * @param orders Initial orders array
    * @param cursor Loop after
    * @returns List of valid order interactions for today
    */
-  public async loopOrdersForToday(
+  public async loopOrders(
     validity: ValidityInterface,
+    between?: [Date, Date],
     orders: GQLEdgeInterface[] = [],
     cursor?: string
   ): Promise<GQLEdgeInterface[]> {
@@ -245,22 +248,33 @@ export default class Utils {
       { txs, cursor }
     );
 
-    const ordersNotToday = data.transactions.edges.filter(
-      ({ node }) => !this.checkIfTodayOrder(node)
-    );
-    const ordersToday = data.transactions.edges.filter(
-      ({ node }) => this.checkIfTodayOrder(node) && this.checkIfValidOrder(node)
-    );
+    if (between) {
+      // TODO: between dates
+      // if we only need to get orders between two dates, filter
+      const ordersNotBetween = data.transactions.edges.filter(
+        ({ node }) => !this.checkIfTodayOrder(node)
+      );
+      const ordersBetween = data.transactions.edges.filter(
+        ({ node }) =>
+          this.checkIfTodayOrder(node) && this.checkIfValidOrder(node)
+      );
 
-    orders.push(...ordersToday);
+      orders.push(...ordersBetween);
+    } else {
+      // if we need to loop through all orders, push all valid ones
+      orders.push(
+        ...data.transactions.edges.filter(({ node }) =>
+          this.checkIfValidOrder(node)
+        )
+      );
+    }
 
-    // if there are orders that were
-    // not made today return
-    if (ordersNotToday.length > 0) return orders;
-    // continue loop if all orders were made today
+    if (data.transactions.edges.length === 0) return orders;
+    // continue loop if there are orders left
     else
-      return await this.loopOrdersForToday(
+      return await this.loopOrders(
         validity,
+        between,
         orders,
         data.transactions.edges[data.transactions.edges.length - 1].cursor
       );
@@ -459,6 +473,20 @@ export default class Utils {
    */
   public blockTimestampToMs(val: number) {
     return val * 1000;
+  }
+
+  /**
+   * Get the date tomorrow
+   * @param date Date to calculate from
+   * @returns Tomorrow
+   */
+  public tomorrow(date: Date | number | string = new Date()) {
+    const tomorrow = new Date(date);
+
+    tomorrow.setDate(new Date(date).getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    return tomorrow;
   }
 
   /**

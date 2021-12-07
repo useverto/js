@@ -165,8 +165,13 @@ export default class Token {
       contractData = await contract.readState();
     }
 
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+
+    const to = this.utils.tomorrow(from);
+
     const orders = (
-      await this.utils.loopOrdersForToday(contractData.validity)
+      await this.utils.loopOrders(contractData.validity, [from, to])
     ).filter((edge) => {
       const blockDate = this.utils.blockTimestampToMs(
         edge.node.block.timestamp
@@ -230,13 +235,14 @@ export default class Token {
    * Fetches the price history for a given token
    * @param pair Pairs to calculate price from.
    * One token of the first token = X tokens of the second
-   * @param region Two dates to return prices between
+   * @param region Two dates to return prices between (use
+   * undefined to get the full price history)
    * @returns Token prices for the **first item in the pair**
    * between the two dates mapped with dates
    */
   async getPriceHistory(
     pair: TokenPair,
-    region: [Date, Date]
+    region?: [Date, Date]
   ): Promise<PriceData[]> {
     return [];
   }
@@ -249,12 +255,16 @@ export default class Token {
   async getVolume(id: string): Promise<number> {
     // get the validity for the clob contract
     const validity = await this.utils.getValidity(this.utils.CLOB_CONTRACT);
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+
+    const to = this.utils.tomorrow(from);
 
     // call the volume calculator
     return this.utils.calculateVolumeForDay(
       // loop through the interactions that have been made today
       // and add those that have been swaps using this token
-      await this.utils.loopOrdersForToday(validity),
+      await this.utils.loopOrders(validity, [from, to]),
       id
     );
   }
@@ -331,8 +341,7 @@ export default class Token {
     // get txs for each date
     for (const date in data) {
       const txsForDay = txs.filter((tx) => {
-        const tomorrow = new Date(date);
-        tomorrow.setDate(new Date(date).getDate() + 1);
+        const tomorrow = this.utils.tomorrow(date);
 
         return (
           this.utils.blockTimestampToMs(tx.node.block.timestamp) >=
