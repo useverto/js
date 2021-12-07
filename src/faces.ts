@@ -89,3 +89,13 @@ export type PriceData = VolumeData;
 export interface ValidityInterface {
   [interactionID: string]: boolean;
 }
+
+export interface ClobContractStateInterface {
+  [key: string]: any;
+  pairs: {
+    pair: [string, string];
+    orders: {
+      [key: string]: any;
+    }[];
+  }[];
+}

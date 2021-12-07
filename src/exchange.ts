@@ -1,6 +1,7 @@
 import { cacheContractHook } from "verto-cache-interface";
 import { SmartWeave } from "redstone-smartweave";
 import {
+  ClobContractStateInterface,
   DecodedTag,
   ExtensionOrJWK,
   OrderInterface,
@@ -202,15 +203,9 @@ export default class Exchange {
    */
   async getOrderBook(input: string | TokenPair): Promise<OrderInterface[]> {
     // get clob contract state
-    const clobContractState: {
-      [key: string]: any;
-      pairs: {
-        pair: [string, string];
-        orders: {
-          [key: string]: any;
-        }[];
-      }[];
-    } = await this.utils.getState(this.utils.CLOB_CONTRACT);
+    const clobContractState: ClobContractStateInterface = await this.utils.getState(
+      this.utils.CLOB_CONTRACT
+    );
 
     // map orders
     const allOrders: OrderInterface[][] = clobContractState.pairs
