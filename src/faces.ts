@@ -1,4 +1,4 @@
-import Transaction from "arweave/node/lib/transaction";
+import { JWKInterface } from "arweave/node/lib/wallet";
 
 // Community Interfaces
 
@@ -23,25 +23,6 @@ export interface UserInterface {
   };
 }
 
-export interface BalanceInterface {
-  id: string;
-  balance: number;
-  name: string;
-  ticker: string;
-  logo?: string;
-}
-
-export interface OrderInterface {
-  id: string;
-  status: "pending" | "success" | "cancelled" | "returned";
-  sender: string;
-  target: string;
-  token: string;
-  input: string;
-  output: string;
-  timestamp: number;
-}
-
 export interface TransactionInterface {
   id: string;
   status: "success" | "pending" | "error";
@@ -58,57 +39,63 @@ export interface TokenInterface {
   ticker: string;
 }
 
-export interface PriceInterface {
+export interface OrderInterface {
+  id: string;
+  owner: string;
+  pair: TokenPair;
   price: number;
+  filled: number;
+  quantity: number;
+}
+
+export type TokenType = "art" | "community" | "custom";
+
+export type TokenPair = [string, string];
+
+export interface DecodedTag {
   name: string;
-  ticker: string;
-  type?: "art" | "community" | "custom";
+  value: string;
 }
 
-interface CostInterface {
-  ar: number;
-  token: number;
+export type ExtensionOrJWK = "use_wallet" | JWKInterface;
+
+/**
+ * Config type for Global Verto Variables
+ */
+export interface GlobalConfigInterface {
+  CLOB_CONTRACT?: string;
+  COMMUNITY_CONTRACT?: string;
 }
 
-export interface SwapInterface {
-  transactions: { transaction: Transaction; type?: "fee" }[];
-  cost: CostInterface;
+export interface VolumeOrderInterface {
+  quantity: number;
+  timestamp: number;
 }
 
-export interface FeeInterface {
-  transaction: Transaction;
-  cost: CostInterface;
+export interface SwapPairInterface {
+  /** The token you are trading from / sending to the exchange */
+  from: string;
+  /** The token you wish to receive */
+  to: string;
 }
 
-// Trading Post Interfaces
-
-export interface TradingPostInterface {
-  address: string;
-  balance: number;
-  stake: number;
-  time: number;
-  endpoint: string;
+export interface VolumeData {
+  date: string;
+  value: number;
 }
 
-export interface OrderBookInterface {
-  txID: string;
-  amnt: number;
-  rate?: number;
-  addr: string;
-  type: string;
-  createdAt: number;
-  received: number;
-  token?: string;
+export type PriceData = VolumeData;
+
+export interface ValidityInterface {
+  [interactionID: string]: boolean;
 }
 
-export interface ConfigInterface {
-  blockedTokens: string[];
-  chain: {
-    [identifier: string]: {
-      addr: string;
-    };
-  };
-  tradeFee: number;
-  publicURL: string;
-  version: string;
+export interface ClobContractStateInterface {
+  [key: string]: any;
+  pairs: {
+    pair: [string, string];
+    orders: {
+      [key: string]: any;
+    }[];
+  }[];
 }

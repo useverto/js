@@ -9,21 +9,27 @@
   "files": [
     "dist"
   ],
+  "gitHooks": {
+    "pre-commit": "prettier --write . && git add -A"
+  },
   "main": "dist/index",
   "types": "dist/index",
   "scripts": {
     "build": "tsc",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check ."
   },
   "dependencies": {
-    "ardb": "^1.0.8",
-    "arweave": "^1.10.13",
-    "axios": "^0.21.1",
-    "smartweave": "^0.4.29"
+    "ar-gql": "^0.0.6",
+    "arweave": "^1.10.18",
+    "axios": "^0.24.0",
+    "redstone-smartweave": "^0.3.10-alpha.19",
+    "verto-cache-interface": "^1.0.7"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",
     "prettier": "^2.2.1",
-    "typescript": "^4.2.3"
+    "typescript": "^4.2.3",
+    "yorkie": "^2.0.0"
   }
 }
