@@ -75,7 +75,9 @@ export default class User {
       }
 
       return balances;
-    } else return await fetchBalancesForAddress(address);
+    } else {
+      return await fetchBalancesForAddress(address);
+    }
   }
 
   /**
@@ -111,7 +113,7 @@ export default class User {
     );
 
     // flatten orders
-    return ([] as OrderInterface[]).concat(...allOrders);
+    return allOrders.flat();
   }
 
   /**
