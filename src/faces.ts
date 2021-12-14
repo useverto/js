@@ -48,7 +48,7 @@ export interface OrderInterface {
   quantity: number;
 }
 
-export type TokenType = "art" | "community" | "custom";
+export type TokenType = "art" | "community" | "collection" | "custom";
 
 export type TokenPair = [string, string];
 
