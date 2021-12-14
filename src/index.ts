@@ -1,4 +1,3 @@
-import { SmartWeave, SmartWeaveNodeFactory } from "redstone-smartweave";
 import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
 import Arweave from "arweave";
 import Utils from "./utils";
@@ -15,7 +14,6 @@ const client = new Arweave({
 export default class Verto {
   public arweave = client;
   public wallet: ExtensionOrJWK = "use_wallet";
-  public smartweave: SmartWeave;
   public cache: boolean;
 
   // Submodules
@@ -45,28 +43,14 @@ export default class Verto {
     if (wallet) this.wallet = wallet;
 
     this.cache = cache;
-    this.smartweave = SmartWeaveNodeFactory.memCached(this.arweave);
 
     // Submodules
-    this.utils = new Utils(
-      this.arweave,
-      this.wallet,
-      this.cache,
-      this.smartweave,
-      globalConfig
-    );
-    this.token = new Token(
-      this.arweave,
-      this.wallet,
-      this.cache,
-      this.smartweave,
-      this.utils
-    );
+    this.utils = new Utils(this.arweave, this.wallet, this.cache, globalConfig);
+    this.token = new Token(this.arweave, this.wallet, this.cache, this.utils);
     this.user = new User(this.arweave, this.cache, this.utils, this.token);
     this.exchange = new Exchange(
       this.arweave,
       this.wallet,
-      this.smartweave,
       this.utils,
       this.token
     );

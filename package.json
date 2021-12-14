@@ -23,7 +23,6 @@
     "ar-gql": "^0.0.6",
     "arweave": "^1.10.18",
     "axios": "^0.24.0",
-    "redstone-smartweave": "^0.3.10-alpha.19",
     "verto-cache-interface": "^1.0.7"
   },
   "devDependencies": {

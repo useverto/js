@@ -5,18 +5,17 @@ import {
   ValidityInterface,
   VaultInterface,
 } from "./faces";
-import { SmartWeave } from "redstone-smartweave";
 import { fetchContract } from "verto-cache-interface";
 import { Tag } from "arweave/node/lib/transaction";
 import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
+import { readContract } from "smartweave";
 import Arweave from "arweave";
 import axios from "axios";
 
 export default class Utils {
   private arweave: Arweave;
   private wallet: ExtensionOrJWK;
-  private smartweave: SmartWeave;
   private cache: boolean;
 
   public EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
@@ -30,19 +29,17 @@ export default class Utils {
    * @param arweave Arweave instance.
    * @param wallet Arweave keyfile.
    * @param cache Use the Verto cache.
-   * @param smartweave SmartWeave instance.
+   * @param globalConfig Global configuration object.
    */
   constructor(
     arweave: Arweave,
     wallet: ExtensionOrJWK,
     cache: boolean,
-    smartweave: SmartWeave,
     globalConfig?: GlobalConfigInterface
   ) {
     this.arweave = arweave;
     this.wallet = wallet;
     this.cache = cache;
-    this.smartweave = smartweave;
 
     // Set custom config
     if (globalConfig) {
@@ -111,11 +108,7 @@ export default class Utils {
    */
   public async getState<T = any>(addr: string): Promise<T> {
     if (this.cache) return (await fetchContract(addr))?.state;
-    else {
-      const contract = this.smartweave.contract(addr).connect(this.wallet);
-
-      return (await contract.readState()).state as T;
-    }
+    else return readContract(this.arweave, addr);
   }
 
   /**
@@ -187,11 +180,14 @@ export default class Utils {
 
       validity = contract?.validity;
     } else {
-      const contract = this.smartweave
-        .contract(contractID)
-        .connect(this.wallet);
+      const contract = await readContract(
+        this.arweave,
+        contractID,
+        undefined,
+        true
+      );
 
-      validity = (await contract.readState())?.validity;
+      validity = contract?.validity;
     }
 
     if (!validity) throw new Error("Could not fetch validity for token");

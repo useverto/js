@@ -1,5 +1,4 @@
 import { cacheContractHook } from "verto-cache-interface";
-import { SmartWeave } from "redstone-smartweave";
 import {
   ClobContractStateInterface,
   DecodedTag,
@@ -8,6 +7,7 @@ import {
   SwapPairInterface,
   TokenPair,
 } from "./faces";
+import { interactWrite } from "smartweave";
 import Arweave from "arweave";
 import axios from "axios";
 import Utils from "./utils";
@@ -16,7 +16,6 @@ import Token from "./token";
 export default class Exchange {
   private arweave: Arweave;
   private wallet: ExtensionOrJWK;
-  private smartweave: SmartWeave;
   private utils: Utils;
   private token: Token;
 
@@ -24,20 +23,17 @@ export default class Exchange {
    *
    * @param arweave Arweave instance.
    * @param wallet Arweave keyfile.
-   * @param smartweave SmartWeave instance.
    * @param utils Utils submodule.
    * @param token Token submodule.
    */
   constructor(
     arweave: Arweave,
     wallet: ExtensionOrJWK,
-    smartweave: SmartWeave,
     utils: Utils,
     token: Token
   ) {
     this.arweave = arweave;
     this.wallet = wallet;
-    this.smartweave = smartweave;
     this.utils = utils;
     this.token = token;
   }
@@ -49,10 +45,6 @@ export default class Exchange {
    * @returns InteractionID
    */
   async addPair(pair: TokenPair, tags: DecodedTag[] = []): Promise<string> {
-    const contract = this.smartweave
-      .contract(this.utils.CLOB_CONTRACT)
-      .connect(this.wallet);
-
     if (pair.length !== 2) throw new Error("Invalid pair. Length should be 2.");
 
     pair.forEach((hash) => {
@@ -62,7 +54,10 @@ export default class Exchange {
 
     const interactionID = await cacheContractHook(
       () =>
-        contract.writeInteraction(
+        interactWrite(
+          this.arweave,
+          this.wallet,
+          this.utils.CLOB_CONTRACT,
           {
             function: "addPair",
             pair,
@@ -110,10 +105,6 @@ export default class Exchange {
         "Invalid ID in pair. Must be a valid SmartWeave contract ID"
       );
 
-    const contract = this.smartweave
-      .contract(this.utils.CLOB_CONTRACT)
-      .connect(this.wallet);
-
     const orderID = await cacheContractHook(async () => {
       // Transfer input tokens to the orderbook
       const transferID = await this.token.transfer(
@@ -124,7 +115,10 @@ export default class Exchange {
       );
 
       // Create the swap interaction
-      return await contract.writeInteraction(
+      return await interactWrite(
+        this.arweave,
+        this.wallet,
+        this.utils.CLOB_CONTRACT,
         {
           function: "createOrder",
           transaction: transferID,
@@ -166,13 +160,12 @@ export default class Exchange {
    * @returns The transaction id of the cancel
    */
   async cancel(orderID: string): Promise<string> {
-    const contract = this.smartweave
-      .contract(this.utils.CLOB_CONTRACT)
-      .connect(this.wallet);
-
     const transactionID = await cacheContractHook(
-      async () =>
-        contract.writeInteraction(
+      () =>
+        interactWrite(
+          this.arweave,
+          this.wallet,
+          this.utils.CLOB_CONTRACT,
           {
             function: "cancelOrder",
             orderID,

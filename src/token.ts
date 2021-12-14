@@ -19,7 +19,7 @@ import {
   ValidityInterface,
 } from "./faces";
 import { GQLEdgeInterface } from "ar-gql/dist/faces";
-import { SmartWeave } from "redstone-smartweave";
+import { readContract, interactWrite } from "smartweave";
 import Arweave from "arweave";
 import Utils from "./utils";
 
@@ -27,7 +27,6 @@ export default class Token {
   private arweave: Arweave;
   private wallet: ExtensionOrJWK;
   private cache: boolean;
-  private smartweave: SmartWeave;
   private utils: Utils;
 
   /**
@@ -35,20 +34,17 @@ export default class Token {
    * @param arweave Arweave instance
    * @param wallet Arweave keyfile
    * @param cache Use the Verto cache
-   * @param smartweave SmartWeave instance
    * @param utils Utils submodule
    */
   constructor(
     arweave: Arweave,
     wallet: ExtensionOrJWK,
     cache: boolean,
-    smartweave: SmartWeave,
     utils: Utils
   ) {
     this.arweave = arweave;
     this.wallet = wallet;
     this.cache = cache;
-    this.smartweave = smartweave;
     this.utils = utils;
   }
 
@@ -157,12 +153,15 @@ export default class Token {
     // load from contract if cache is disabled
     // or if the cache did not return anything
     if (!this.cache || !contractData) {
-      const contract = this.smartweave
-        .contract(this.utils.CLOB_CONTRACT)
-        .connect(this.wallet);
-
-      contractData = await contract.readState();
+      contractData = await readContract(
+        this.arweave,
+        this.utils.CLOB_CONTRACT,
+        undefined,
+        true
+      );
     }
+
+    if (!contractData) throw new Error("Could not load clob contract data.");
 
     const orders = (
       await this.utils.loopOrders(contractData.validity, region)
@@ -240,12 +239,15 @@ export default class Token {
     // load from contract if cache is disabled
     // or if the cache did not return anything
     if (!this.cache || !contractData) {
-      const contract = this.smartweave
-        .contract(this.utils.CLOB_CONTRACT)
-        .connect(this.wallet);
-
-      contractData = await contract.readState();
+      contractData = await readContract(
+        this.arweave,
+        this.utils.CLOB_CONTRACT,
+        undefined,
+        true
+      );
     }
+
+    if (!contractData) throw new Error("Could not read clob contract data.");
 
     const orders = (
       await this.utils.loopOrders(contractData.validity, region)
@@ -461,9 +463,11 @@ export default class Token {
     target: string,
     tags: { name: string; value: string }[] = []
   ) {
-    const contract = this.smartweave.contract(id).connect(this.wallet);
     const interaction = () =>
-      contract.writeInteraction(
+      interactWrite(
+        this.arweave,
+        this.wallet,
+        id,
         {
           function: "transfer",
           target,
@@ -474,10 +478,8 @@ export default class Token {
           { name: "Action", value: "Transfer" },
           ...tags,
         ],
-        {
-          target,
-          winstonQty: "0",
-        }
+        target,
+        "0"
       );
 
     // get listed tokens to see if we need to refres the cache
@@ -505,17 +507,15 @@ export default class Token {
     type: TokenType,
     tags: DecodedTag[] = []
   ): Promise<string> {
-    const contract = this.smartweave
-      .contract(this.utils.COMMUNITY_CONTRACT)
-      .connect(this.wallet);
-
     if (!this.utils.validateHash(address))
       throw new Error("Invalid token address.");
 
-    // TODO: do we want fees on this @t8
     const interactionID = await cacheContractHook(
-      async () =>
-        contract.writeInteraction(
+      () =>
+        interactWrite(
+          this.arweave,
+          this.wallet,
+          this.utils.COMMUNITY_CONTRACT,
           {
             function: "list",
             id: address,
