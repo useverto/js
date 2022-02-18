@@ -115,7 +115,7 @@ export default class Exchange {
       );
 
       // Create the swap interaction
-      return await interactWrite(
+      await interactWrite(
         this.arweave,
         this.wallet,
         this.utils.CLOB_CONTRACT,
@@ -137,6 +137,9 @@ export default class Exchange {
           ...tags,
         ]
       );
+
+      // invoke foreign calls on token contracts
+      await this.utils.syncFCP(pair.from, pair.to);
     }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
 
     if (orderID === null) throw new Error("Could not create order");
@@ -160,29 +163,31 @@ export default class Exchange {
    * @returns The transaction id of the cancel
    */
   async cancel(orderID: string): Promise<string> {
-    const transactionID = await cacheContractHook(
-      () =>
-        interactWrite(
-          this.arweave,
-          this.wallet,
-          this.utils.CLOB_CONTRACT,
+    const transactionID = await cacheContractHook(async () => {
+      await interactWrite(
+        this.arweave,
+        this.wallet,
+        this.utils.CLOB_CONTRACT,
+        {
+          function: "cancelOrder",
+          orderID,
+        },
+        [
           {
-            function: "cancelOrder",
-            orderID,
+            name: "Exchange",
+            value: "Verto",
           },
-          [
-            {
-              name: "Exchange",
-              value: "Verto",
-            },
-            {
-              name: "Action",
-              value: "CancelOrder",
-            },
-          ]
-        ),
-      this.utils.CLOB_CONTRACT
-    );
+          {
+            name: "Action",
+            value: "CancelOrder",
+          },
+        ]
+      );
+
+      // TODO: get the token pair of the order (with orderID)
+      // TODO: call FCP sync to "readOutbox" of the tokens in the pair
+      // this will make the tokens process the returning token tranfers
+    }, this.utils.CLOB_CONTRACT);
 
     if (!transactionID) throw new Error("Order could not be cancelled");
 

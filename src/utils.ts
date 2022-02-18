@@ -9,7 +9,7 @@ import { fetchContract } from "verto-cache-interface";
 import { Tag } from "arweave/node/lib/transaction";
 import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
-import { readContract } from "smartweave";
+import { interactWrite, readContract } from "smartweave";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -99,6 +99,36 @@ export default class Utils {
     await this.arweave.transactions.post(transaction);
 
     return transaction.id;
+  }
+
+  /**
+   * Call the "readOutbox" function of FCP compatible contracts
+   *
+   * @param invokingContract ID of the contract that invokes these calls
+   * @param contracts IDs of contracts to call
+   */
+  public async syncFCP(invokingContract: string, ...contracts: string[]) {
+    for (const contractID of contracts) {
+      await interactWrite(
+        this.arweave,
+        this.wallet,
+        contractID,
+        {
+          function: "readOutbox",
+          contract: invokingContract,
+        },
+        [
+          {
+            name: "Exchange",
+            value: "Verto",
+          },
+          {
+            name: "Type",
+            value: "FCP-ReadOutbox",
+          },
+        ]
+      );
+    }
   }
 
   /**
