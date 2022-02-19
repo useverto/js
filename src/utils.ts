@@ -9,7 +9,8 @@ import { fetchContract } from "verto-cache-interface";
 import { Tag } from "arweave/node/lib/transaction";
 import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
-import { interactWrite, readContract } from "smartweave";
+import { interactWrite } from "smartweave";
+import { executeContract } from "@three-em/node";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -138,7 +139,8 @@ export default class Utils {
    */
   public async getState<T = any>(addr: string): Promise<T> {
     if (this.cache) return (await fetchContract(addr))?.state;
-    else return readContract(this.arweave, addr);
+    // TODO: gateway config
+    else return (await executeContract(addr)).state;
   }
 
   /**
@@ -210,12 +212,7 @@ export default class Utils {
 
       validity = contract?.validity;
     } else {
-      const contract = await readContract(
-        this.arweave,
-        contractID,
-        undefined,
-        true
-      );
+      const contract = await executeContract(contractID);
 
       validity = contract?.validity;
     }
