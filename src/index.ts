@@ -47,12 +47,18 @@ export default class Verto {
     // Submodules
     this.utils = new Utils(this.arweave, this.wallet, this.cache, globalConfig);
     this.token = new Token(this.arweave, this.wallet, this.cache, this.utils);
-    this.user = new User(this.arweave, this.cache, this.utils, this.token);
     this.exchange = new Exchange(
       this.arweave,
       this.wallet,
       this.utils,
       this.token
+    );
+    this.user = new User(
+      this.arweave,
+      this.cache,
+      this.utils,
+      this.token,
+      this.exchange
     );
   }
 }
