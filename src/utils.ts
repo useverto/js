@@ -151,7 +151,7 @@ export default class Utils {
    */
   public validateHash(hash: string) {
     if (typeof hash !== "string") return false;
-    return /[a-z0-9_-]{43}/i.test(hash);
+    return /^[a-z0-9_-]{43}$/i.test(hash);
   }
 
   /**

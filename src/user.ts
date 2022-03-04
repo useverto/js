@@ -63,11 +63,11 @@ export default class User {
   }
 
   /**
-   * Fetches the assets (listed on Verto) for a given wallet address.
+   * Fetches the assets (listed on Verto) for a given wallet address or username.
    * @param address User wallet address.
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
-  async getBalances(address: string): Promise<UserBalance[]> {
+  async getBalances(input: string): Promise<UserBalance[]> {
     if (!this.cache) {
       const balances: UserBalance[] = [];
       const listedTokens = await this.token.getTokens();
