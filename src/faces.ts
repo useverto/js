@@ -1,4 +1,8 @@
 import { JWKInterface } from "arweave/node/lib/wallet";
+import {
+  OrderInterface,
+  ClobState,
+} from "verto-internals/interfaces/contracts/clob";
 
 // Community Interfaces
 
@@ -39,15 +43,6 @@ export interface TokenInterface {
   ticker: string;
 }
 
-export interface OrderInterface {
-  id: string;
-  owner: string;
-  pair: TokenPair;
-  price: number;
-  filled: number;
-  quantity: number;
-}
-
 export type TokenType = "art" | "community" | "collection" | "custom";
 
 export type TokenPair = [string, string];
@@ -58,6 +53,10 @@ export interface DecodedTag {
 }
 
 export type ExtensionOrJWK = "use_wallet" | JWKInterface;
+
+export interface OrderInterfaceWithPair extends OrderInterface {
+  pair: TokenPair;
+}
 
 /**
  * Config type for Global Verto Variables
@@ -90,12 +89,4 @@ export interface ValidityInterface {
   [interactionID: string]: boolean;
 }
 
-export interface ClobContractStateInterface {
-  [key: string]: any;
-  pairs: {
-    pair: [string, string];
-    orders: {
-      [key: string]: any;
-    }[];
-  }[];
-}
+export type ClobContractStateInterface = ClobState;

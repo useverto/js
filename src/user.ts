@@ -5,16 +5,22 @@ import {
   fetchUsers,
   UserBalance,
 } from "verto-cache-interface";
-import { OrderInterface, TransactionInterface, UserInterface } from "./faces";
+import {
+  OrderInterfaceWithPair,
+  TransactionInterface,
+  UserInterface,
+} from "./faces";
 import Arweave from "arweave";
 import Utils from "./utils";
 import Token from "./token";
+import Exchange from "./exchange";
 
 export default class User {
   private arweave: Arweave;
   private cache: boolean;
   private utils: Utils;
   private token: Token;
+  private exchange: Exchange;
 
   /**
    *
@@ -23,11 +29,18 @@ export default class User {
    * @param utils Utils submodule.
    * @param token Token submodule.
    */
-  constructor(arweave: Arweave, cache: boolean, utils: Utils, token: Token) {
+  constructor(
+    arweave: Arweave,
+    cache: boolean,
+    utils: Utils,
+    token: Token,
+    exchange: Exchange
+  ) {
     this.arweave = arweave;
     this.cache = cache;
     this.utils = utils;
     this.token = token;
+    this.exchange = exchange;
   }
 
   /**
@@ -85,35 +98,11 @@ export default class User {
    * @param address User wallet address
    * @returns List of orders
    */
-  async getOrders(address: string): Promise<OrderInterface[]> {
-    // get clob contract state
-    const clobContractState: {
-      [key: string]: any;
-      pairs: {
-        pair: [string, string];
-        orders: {
-          [key: string]: any;
-        }[];
-      }[];
-    } = await this.utils.getState(this.utils.CLOB_CONTRACT);
+  async getOrders(address: string): Promise<OrderInterfaceWithPair[]> {
+    // get all orders
+    const allOrders = await this.exchange.getOrderBook();
 
-    // map orders
-    const allOrders: OrderInterface[][] = clobContractState.pairs.map(
-      ({ pair, orders }) =>
-        orders
-          .map((order) => ({
-            id: order.id,
-            owner: order.creator,
-            pair,
-            price: order.price,
-            filled: order.originalQuantity - order.quantity,
-            quantity: order.originalQuantity,
-          }))
-          .filter(({ owner }) => owner === address)
-    );
-
-    // flatten orders
-    return allOrders.flat();
+    return allOrders.filter((order) => order.creator === address);
   }
 
   /**

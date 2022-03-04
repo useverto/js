@@ -3,7 +3,7 @@ import {
   ClobContractStateInterface,
   DecodedTag,
   ExtensionOrJWK,
-  OrderInterface,
+  OrderInterfaceWithPair,
   SwapPairInterface,
   TokenPair,
 } from "./faces";
@@ -115,7 +115,7 @@ export default class Exchange {
       );
 
       // Create the swap interaction
-      await interactWrite(
+      const orderID = await interactWrite(
         this.arweave,
         this.wallet,
         this.utils.CLOB_CONTRACT,
@@ -139,7 +139,9 @@ export default class Exchange {
       );
 
       // invoke foreign calls on token contracts
-      await this.utils.syncFCP(pair.from, pair.to);
+      await this.utils.syncFCP(this.utils.CLOB_CONTRACT, pair.from, pair.to);
+
+      return orderID;
     }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
 
     if (orderID === null) throw new Error("Could not create order");
@@ -163,8 +165,14 @@ export default class Exchange {
    * @returns The transaction id of the cancel
    */
   async cancel(orderID: string): Promise<string> {
+    // get the cancelled order
+    const order = await this.getOrder(orderID);
+
+    if (!order) throw new Error("Order does not exist");
+
     const transactionID = await cacheContractHook(async () => {
-      await interactWrite(
+      // cancel interaction
+      const txID = await interactWrite(
         this.arweave,
         this.wallet,
         this.utils.CLOB_CONTRACT,
@@ -183,11 +191,11 @@ export default class Exchange {
           },
         ]
       );
+      // sync fcp for the two tokens in the pair
+      await this.utils.syncFCP(this.utils.CLOB_CONTRACT, ...order.pair);
 
-      // TODO: get the token pair of the order (with orderID)
-      // TODO: call FCP sync to "readOutbox" of the tokens in the pair
-      // this will make the tokens process the returning token tranfers
-    }, this.utils.CLOB_CONTRACT);
+      return txID;
+    }, [this.utils.CLOB_CONTRACT, ...order.pair]);
 
     if (!transactionID) throw new Error("Order could not be cancelled");
 
@@ -195,34 +203,43 @@ export default class Exchange {
   }
 
   /**
-   * Fetches the order book for a specific token from the CLOB contract
-   * @param input Token contract ID or token pair
+   * Fetches the order book for a specific token (or all orders) from the CLOB contract
+   * @param input Token contract ID or token pair. Leave undefined to fetch **all** orders
    * @returns List of orders
    */
-  async getOrderBook(input: string | TokenPair): Promise<OrderInterface[]> {
+  async getOrderBook(
+    input?: string | TokenPair
+  ): Promise<OrderInterfaceWithPair[]> {
     // get clob contract state
     const clobContractState: ClobContractStateInterface = await this.utils.getState(
       this.utils.CLOB_CONTRACT
     );
-
     // map orders
-    const allOrders: OrderInterface[][] = clobContractState.pairs
-      .filter(({ pair }) => {
-        if (typeof input === "string") return pair.includes(input);
-        else return pair.includes(input[0]) && pair.includes(input[1]);
-      })
-      .map(({ pair, orders }) =>
+    const allOrders: OrderInterfaceWithPair[] = clobContractState.pairs.flatMap(
+      ({ pair, orders }) =>
         orders.map((order) => ({
-          id: order.id,
-          owner: order.creator,
+          ...order,
           pair,
-          price: order.price,
-          filled: order.originalQuantity - order.quantity,
-          quantity: order.originalQuantity,
         }))
-      );
+    );
+
+    if (!input) return allOrders;
 
     // flatten orders
-    return ([] as OrderInterface[]).concat(...allOrders);
+    return allOrders.filter(({ pair }) => {
+      if (typeof input === "string") return pair.includes(input);
+      else return pair.includes(input[0]) && pair.includes(input[1]);
+    });
+  }
+
+  /**
+   * Get a single order with by it's ID
+   * @param orderID Order's ID
+   * @returns Order data
+   */
+  async getOrder(orderID: string): Promise<OrderInterfaceWithPair | undefined> {
+    const allOrders = await this.getOrderBook();
+
+    return allOrders.find(({ id }) => id === orderID);
   }
 }

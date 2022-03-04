@@ -20,12 +20,13 @@
     "fmt:check": "prettier --check ."
   },
   "dependencies": {
-    "@three-em/node": "^0.2.3",
+    "@three-em/node": "^0.2.4",
     "ar-gql": "^0.0.6",
-    "arweave": "^1.10.18",
+    "arweave": "^1.10.23",
     "axios": "^0.24.0",
     "smartweave": "^0.4.46",
-    "verto-cache-interface": "^1.0.7"
+    "verto-cache-interface": "^1.1.1",
+    "verto-internals": "^0.9.1"
   },
   "devDependencies": {
     "@types/node": "^14.14.37",
