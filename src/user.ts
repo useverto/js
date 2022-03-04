@@ -1,5 +1,6 @@
 import {
   CommunityContractPeople,
+  fetchBalancesByUsername,
   fetchBalancesForAddress,
   fetchContract,
   fetchUsers,
@@ -63,7 +64,7 @@ export default class User {
   }
 
   /**
-   * Fetches the assets (listed on Verto) for a given wallet address or username.
+   * Fetches the assets for a given wallet address or username.
    * @param address User wallet address.
    * @returns List of asset ids, balances, names, tickers, & logos.
    */
@@ -89,7 +90,19 @@ export default class User {
 
       return balances;
     } else {
-      return await fetchBalancesForAddress(address);
+      // if the input is not a valid hash, the request is clearly
+      // for a username
+      if (!this.utils.validateHash(input)) {
+        return (await fetchBalancesByUsername(input)) || [];
+      }
+      // if the input is a valid hash, it can be for an address
+      // or a username. We check by address first, and if it is
+      // undefined, we check by username again
+      const balances = await fetchBalancesForAddress(input);
+
+      if (!balances || balances.length === 0) {
+        return (await fetchBalancesByUsername(input)) || [];
+      } else return balances;
     }
   }
 
