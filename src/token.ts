@@ -455,7 +455,7 @@ export default class Token {
    * Gets the URL of the logo of an Arweave token. Uses the Cryptometa API by Ashlar
    * @param id ID of the token
    * @param theme Logo theme to return ("dark" | "light")
-   * @returns Token logo
+   * @returns Token logo URL
    */
   getLogo(id: string, theme: "light" | "dark" = "light"): string {
     return `https://meta.viewblock.io/AR.${id}/logo?t=${theme}`;

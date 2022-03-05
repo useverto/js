@@ -67,7 +67,7 @@ export default class User {
 
   /**
    * Fetches the assets for a given wallet address or username
-   * @param address User wallet address
+   * @param input Username or user wallet address
    * @param type Optional token type filter
    * @returns List of asset ids, balances, names, tickers, & logos
    */

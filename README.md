@@ -18,6 +18,7 @@
     - [Swapping between two tokens](#swapping-between-two-tokens)
     - [Cancelling an order](#cancelling-an-order)
     - [Get the orderbook](#get-the-orderbook)
+    - [Get an order](#get-an-order)
   - [Token](#token)
     - [Get tokens](#get-tokens)
     - [Get a token's type](#get-a-tokens-type)
@@ -25,6 +26,7 @@
     - [Get a token's price history](#get-a-tokens-price-history)
     - [Get a token's volume](#get-a-tokens-volume)
     - [Get a token's volume history](#get-a-tokens-volume-history)
+    - [Get a flexible logo for the token](#get-a-flexible-logo-for-the-token)
     - [Transfer tokens](#transfer-tokens)
     - [List a token](#list-a-token)
   - [User](#user)
@@ -155,6 +157,9 @@ const pairOrders = await client.exchange.getOrderBook([
   "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
   "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
 ]);
+
+// for all orders in the contract
+const allOrders = await client.exchange.getOrderBook();
 ```
 
 The function takes one param:
@@ -162,6 +167,22 @@ The function takes one param:
 - `input`: Token contract ID or token pair tuple
 
 The function returns an array of orders.
+
+#### Get an order
+
+Fetches a single order from the orderbook by it's ID.
+
+```ts
+const order = await client.exchange.getOrder(
+  "xUd5mtaonpfWwuyVO98wzSFZh0d6VJuIxbuTJvlwOJQ"
+);
+```
+
+The function takes one param:
+
+- `orderID`: The transaction ID of the order interaction
+
+The function returns an order along with the token pair it belongs to.
 
 ### Token
 
@@ -265,9 +286,29 @@ const history = await client.token.getVolumeHistory(
 
 The function takes one param:
 
-- `id`: Token contract id
+- `id`: Token contract ID
 
 The function returns the volume history of the token.
+
+#### Get a flexible logo for the token
+
+Returns a flexible logo's URL, that supports dark & light theme. If the token doesn't have a logo, it will return a placeholder for it.
+
+The function uses the [CryptoMeta API](https://github.com/Ashlar/cryptometa) by Ashlar. Logos can be submitted [here](https://github.com/Ashlar/cryptometa/blob/master/PULL_REQUEST_TEMPLATE.md);
+
+```ts
+const logo = client.token.getLogo(
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "dark"
+);
+```
+
+The function takes two params:
+
+- `id`: Token contract ID
+- `theme`: _Optional._ UI theme to return the icon for (`"light" | "dark"`)
+
+The function returns an URL for the appropriate logo.
 
 #### Transfer tokens
 
@@ -331,13 +372,15 @@ Fetch assets for a given address.
 
 ```ts
 const balances = await client.user.getBalances(
-  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
+  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+  "art"
 );
 ```
 
 The function takes one param:
 
-- `input`: User wallet address
+- `input`: User name or user wallet address
+- `type`: _Optional._ Token type filter
 
 The function returns the balances for the user.
 
