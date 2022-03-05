@@ -134,7 +134,7 @@ export default class User {
       // if the input is a valid hash, it can be for an address
       // or a username. We check by address first, and if it is
       // undefined, we check by username again
-      const balances = await fetchBalancesForAddress(input, type);
+      const balances = (await fetchBalancesForAddress(input, type)) || [];
 
       if (!balances || balances.length === 0) {
         return (await fetchBalancesByUsername(input, type)) || [];
