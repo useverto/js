@@ -59,7 +59,9 @@ export default class Token {
 
     if (this.cache) tokens = await fetchTokens(type);
     else {
-      const contract = await this.utils.getState(this.utils.COMMUNITY_CONTRACT);
+      const contract = await this.utils.getState<CommunityContractState>(
+        this.utils.COMMUNITY_CONTRACT
+      );
 
       if (type) {
         tokens = contract.tokens.filter(

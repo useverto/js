@@ -1,5 +1,6 @@
 import {
   CommunityContractPeople,
+  CommunityContractState,
   fetchBalancesByUsername,
   fetchBalancesForAddress,
   fetchContract,
@@ -8,6 +9,7 @@ import {
 } from "verto-cache-interface";
 import {
   OrderInterfaceWithPair,
+  TokenType,
   TransactionInterface,
   UserInterface,
 } from "./faces";
@@ -45,9 +47,9 @@ export default class User {
   }
 
   /**
-   * Fetches the user info for a given wallet address or username.
-   * @param input User wallet address or username.
-   * @returns The user's data such as name & image, or undefined.
+   * Fetches the user info for a given wallet address or username
+   * @param input User wallet address or username
+   * @returns The user's data such as name & image, or undefined
    */
   async getUser(input: string): Promise<UserInterface | undefined> {
     let allUsers: CommunityContractPeople[];
@@ -64,27 +66,61 @@ export default class User {
   }
 
   /**
-   * Fetches the assets for a given wallet address or username.
-   * @param address User wallet address.
-   * @returns List of asset ids, balances, names, tickers, & logos.
+   * Fetches the assets for a given wallet address or username
+   * @param address User wallet address
+   * @param type Optional token type filter
+   * @returns List of asset ids, balances, names, tickers, & logos
    */
-  async getBalances(input: string): Promise<UserBalance[]> {
+  async getBalances(input: string, type?: TokenType): Promise<UserBalance[]> {
     if (!this.cache) {
       const balances: UserBalance[] = [];
-      const listedTokens = await this.token.getTokens();
+      const communityContractState = await this.utils.getState<CommunityContractState>(
+        this.utils.COMMUNITY_CONTRACT
+      );
+      // addresses to fetch the balances for
+      const addresses: string[] = [];
 
-      for (const token of listedTokens) {
-        const tokenState = await this.utils.getState(token.id);
+      // try to find the input as a user
+      const user = communityContractState.people.find(
+        ({ username }) => username === input
+      );
 
-        if (tokenState?.balances?.[address]) {
-          balances.push({
-            contractId: token.id,
-            name: token.name,
-            ticker: token.ticker,
-            logo: this.utils.getPSTSettingValue("communityLogo", tokenState),
-            balance: tokenState.balances[address],
-            userAddress: address,
-          });
+      if (user) {
+        addresses.push(...user.addresses);
+        // if the user was not found, we check
+        // if the input is a valid Arweave address
+        // and fetch balances for that
+      } else if (this.utils.validateHash(input)) {
+        addresses.push(input);
+        // if the input is not a valid hash and it
+        // could not be found in the people array,
+        // than it is not a valid input (neither an
+        // address, nor an existing username)
+      } else throw new Error("Invalid input");
+
+      // fetch balances for all addresses
+      for (const address of addresses) {
+        // fetch balance for each token
+        for (const token of communityContractState.tokens) {
+          // skip if type filter is supplied and the
+          // token should be filtered out from the results
+          if (type && token.type !== type) continue;
+
+          // fetch the state of the token
+          const tokenState = await this.utils.getState(token.id);
+
+          if (tokenState?.balances?.[address]) {
+            // construct balances object
+            balances.push({
+              contractId: token.id,
+              name: tokenState.name,
+              ticker: tokenState.ticker,
+              logo: this.utils.getPSTSettingValue("communityLogo", tokenState),
+              balance: tokenState.balances[address],
+              userAddress: address,
+              type: token.type,
+            });
+          }
         }
       }
 
@@ -93,15 +129,15 @@ export default class User {
       // if the input is not a valid hash, the request is clearly
       // for a username
       if (!this.utils.validateHash(input)) {
-        return (await fetchBalancesByUsername(input)) || [];
+        return (await fetchBalancesByUsername(input, type)) || [];
       }
       // if the input is a valid hash, it can be for an address
       // or a username. We check by address first, and if it is
       // undefined, we check by username again
-      const balances = await fetchBalancesForAddress(input);
+      const balances = await fetchBalancesForAddress(input, type);
 
       if (!balances || balances.length === 0) {
-        return (await fetchBalancesByUsername(input)) || [];
+        return (await fetchBalancesByUsername(input, type)) || [];
       } else return balances;
     }
   }
