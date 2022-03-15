@@ -191,7 +191,7 @@ export default class User {
     const outTxQuery = await this.utils.arGQL(
       `
       query ($addr: String!, $max: Int) {
-        transactions (owners: [$addr], block: { max: $max }) {
+        transactions (owners: [$addr], block: { max: $max }, first: 20) {
           edges {
             node {
               id
@@ -222,7 +222,7 @@ export default class User {
     const inTxQuery = await this.utils.arGQL(
       `
       query ($addr: String!, $max: Int) {
-        transactions (recipients: [$addr], block: { max: $max }) {
+        transactions (recipients: [$addr], block: { max: $max }, first: 20) {
           edges {
             node {
               id
@@ -320,6 +320,6 @@ export default class User {
           (a.timestamp ||
             parseFloat(new Date().getTime().toString().substring(0, 10)))
       )
-      .slice(0, 5);
+      .slice(0, 20);
   }
 }
