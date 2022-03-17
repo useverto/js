@@ -16,7 +16,7 @@
   "browser": "dist/browser/index",
   "types": "dist/node/index",
   "scripts": {
-    "build": "build-browser && build-node",
+    "build": "tsc --project 'tsconfig.browser.json' && tsc --project 'tsconfig.node.json'",
     "build-browser": "tsc --project 'tsconfig.browser.json'",
     "build-node": "tsc --project 'tsconfig.node.json'",
     "fmt": "prettier --write .",

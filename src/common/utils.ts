@@ -142,7 +142,7 @@ export default class Utils {
   public async getState<T = any>(addr: string): Promise<T> {
     if (this.cache) return (await fetchContract(addr))?.state;
     // TODO: gateway config
-    else return (await executeContract(addr)).state;
+    else return (await this.three_em.executeContract(addr)).state;
   }
 
   /**
@@ -214,7 +214,7 @@ export default class Utils {
 
       validity = contract?.validity;
     } else {
-      const contract = await executeContract(contractID);
+      const contract = await this.three_em.executeContract(contractID);
 
       validity = contract?.validity;
     }
