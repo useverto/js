@@ -579,3 +579,13 @@ export default class Utils {
     return this.EXCHANGE_WALLET;
   }
 }
+
+export interface three_em_module {
+  executeContract: (
+    tx: string,
+    maybeHeight?: number | undefined | null
+  ) => Promise<{
+    state: any;
+    validity: Record<string, any>;
+  }>;
+}

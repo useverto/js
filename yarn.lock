@@ -159,6 +159,11 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
+"@three-em/js@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@three-em/js/-/js-0.2.4.tgz#dc3e93add92277d8bd624dd91185bd98473629b5"
+  integrity sha512-yEoi21FuX1WCbXEjx9Vt838ciz3R6+2Q99v7+U90G+Krbmuy+4VMx3l/b5lWE4P3lrExrK4Ey1CckjzfRfCMAA==
+
 "@three-em/node-darwin-arm64@0.2.0":
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@three-em/node-darwin-arm64/-/node-darwin-arm64-0.2.0.tgz#64bf322a574277f1434dd447b51e9357c997ee12"

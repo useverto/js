@@ -1,6 +1,6 @@
 import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
 import Arweave from "arweave";
-import Utils from "./utils";
+import Utils, { three_em_module } from "./utils";
 import User from "./user";
 import Token from "./token";
 import Exchange from "./exchange";
@@ -24,6 +24,9 @@ export default class Verto {
   public token: Token;
   /** Verto Exchange related functions */
   public exchange: Exchange;
+
+  /** 3em Driver (browser or node) */
+  public static three_em: three_em_module;
 
   /**
    *

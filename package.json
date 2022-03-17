@@ -12,14 +12,18 @@
   "gitHooks": {
     "pre-commit": "prettier --write . && git add -A"
   },
-  "main": "dist/index",
-  "types": "dist/index",
+  "main": "dist/node/index",
+  "browser": "dist/browser/index",
+  "types": "dist/node/index",
   "scripts": {
-    "build": "tsc",
+    "build": "build-browser && build-node",
+    "build-browser": "tsc --project 'tsconfig.browser.json'",
+    "build-node": "tsc --project 'tsconfig.node.json'",
     "fmt": "prettier --write .",
     "fmt:check": "prettier --check ."
   },
   "dependencies": {
+    "@three-em/js": "^0.2.4",
     "@three-em/node": "^0.2.4",
     "ar-gql": "^0.0.6",
     "arweave": "^1.10.23",
