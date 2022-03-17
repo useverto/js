@@ -10,13 +10,13 @@ import { Tag } from "arweave/node/lib/transaction";
 import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
 import { interactWrite } from "smartweave";
-import { executeContract } from "@three-em/node";
 import Arweave from "arweave";
 import axios from "axios";
 
 export default class Utils {
   private arweave: Arweave;
   private wallet: ExtensionOrJWK;
+  private three_em: ThreeEmModule;
   private cache: boolean;
 
   public EXCHANGE_WALLET = "aLemOhg9OGovn-0o4cOCbueiHT9VgdYnpJpq7NgMA1A";
@@ -35,11 +35,13 @@ export default class Utils {
   constructor(
     arweave: Arweave,
     wallet: ExtensionOrJWK,
+    three_em: ThreeEmModule,
     cache: boolean,
     globalConfig?: GlobalConfigInterface
   ) {
     this.arweave = arweave;
     this.wallet = wallet;
+    this.three_em = three_em;
     this.cache = cache;
 
     // Set custom config
@@ -580,7 +582,7 @@ export default class Utils {
   }
 }
 
-export interface three_em_module {
+export interface ThreeEmModule {
   executeContract: (
     tx: string,
     maybeHeight?: number | undefined | null

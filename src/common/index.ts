@@ -1,6 +1,6 @@
 import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
 import Arweave from "arweave";
-import Utils, { three_em_module } from "./utils";
+import Utils, { ThreeEmModule } from "./utils";
 import User from "./user";
 import Token from "./token";
 import Exchange from "./exchange";
@@ -26,7 +26,7 @@ export default class Verto {
   public exchange: Exchange;
 
   /** 3em Driver (browser or node) */
-  public static three_em: three_em_module;
+  public static three_em: ThreeEmModule;
 
   /**
    *
@@ -48,7 +48,13 @@ export default class Verto {
     this.cache = cache;
 
     // Submodules
-    this.utils = new Utils(this.arweave, this.wallet, this.cache, globalConfig);
+    this.utils = new Utils(
+      this.arweave,
+      this.wallet,
+      Verto.three_em,
+      this.cache,
+      globalConfig
+    );
     this.token = new Token(this.arweave, this.wallet, this.cache, this.utils);
     this.exchange = new Exchange(
       this.arweave,
