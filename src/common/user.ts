@@ -72,8 +72,9 @@ export default class User {
    * @returns List of asset ids, balances, names, tickers, & logos
    */
   async getBalances(input: string, type?: TokenType): Promise<UserBalance[]> {
+    let totalBalances: UserBalance[] = [];
+
     if (!this.cache) {
-      const balances: UserBalance[] = [];
       const communityContractState = await this.utils.getState<CommunityContractState>(
         this.utils.COMMUNITY_CONTRACT
       );
@@ -111,7 +112,7 @@ export default class User {
 
           if (tokenState?.balances?.[address]) {
             // construct balances object
-            balances.push({
+            totalBalances.push({
               contractId: token.id,
               name: tokenState.name,
               ticker: tokenState.ticker,
@@ -123,23 +124,41 @@ export default class User {
           }
         }
       }
-
-      return balances;
     } else {
       // if the input is not a valid hash, the request is clearly
       // for a username
       if (!this.utils.validateHash(input)) {
-        return (await fetchBalancesByUsername(input, type)) || [];
-      }
-      // if the input is a valid hash, it can be for an address
-      // or a username. We check by address first, and if it is
-      // undefined, we check by username again
-      const balances = (await fetchBalancesForAddress(input, type)) || [];
+        totalBalances = (await fetchBalancesByUsername(input, type)) || [];
+      } else {
+        // if the input is a valid hash, it can be for an address
+        // or a username. We check by address first, and if it is
+        // undefined, we check by username again
+        totalBalances = (await fetchBalancesForAddress(input, type)) || [];
 
-      if (!balances || balances.length === 0) {
-        return (await fetchBalancesByUsername(input, type)) || [];
-      } else return balances;
+        if (!totalBalances || totalBalances.length === 0) {
+          totalBalances = (await fetchBalancesByUsername(input, type)) || [];
+        }
+      }
     }
+
+    // add balances together or push them and return
+    const balances: UserBalance[] = [];
+
+    for (const balance of totalBalances) {
+      const addedBlance = balances.find(
+        ({ contractId }) => contractId === balance.contractId
+      );
+
+      // balance already pushed once, for a different address
+      // here we add the two balances together
+      if (addedBlance) {
+        addedBlance.balance += balance.balance;
+
+        // balance not pushed yet, so we just push it now
+      } else balances.push(balance);
+    }
+
+    return balances;
   }
 
   /**
