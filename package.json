@@ -1,6 +1,6 @@
 {
   "name": "@verto/js",
-  "version": "1.0.0-beta-9",
+  "version": "1.0.0-beta-10",
   "author": "th8ta LLC",
   "license": "MIT",
   "publishConfig": {
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@three-em/js": "^0.2.5",
-    "@three-em/node": "^0.2.7",
+    "@three-em/node": "^0.2.8",
     "ar-gql": "^0.0.6",
     "arweave": "^1.10.23",
     "axios": "^0.24.0",

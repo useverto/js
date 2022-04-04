@@ -169,10 +169,10 @@
   resolved "https://registry.npmjs.org/@three-em/node-darwin-arm64/-/node-darwin-arm64-0.2.0.tgz"
   integrity sha512-bW7xDQJiYQ/Yc25hAnSWPkEwj4rZ+grQjRUkTFq8Mf8H5u1ngL8ex/XGcwbvZ1YUzbA/oXStn+xQk9uRvvuEiA==
 
-"@three-em/node@^0.2.7":
-  version "0.2.7"
-  resolved "https://registry.npmjs.org/@three-em/node/-/node-0.2.7.tgz"
-  integrity sha512-foulpTocchzc+Coi4R6LMjXlulGzz3bKk1BEJAtV0fxcBSzz1LTRzXYllasxBM9owQf9tc7A6fFZSdgrYRnhgQ==
+"@three-em/node@^0.2.8":
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/@three-em/node/-/node-0.2.8.tgz#5d400f62d59d5f01b6ea6e9e7a0177193d25be1a"
+  integrity sha512-tY5NwmWn9lL59+2/acIdf3nLEnfml1CUV9/AapAR22XlAraszLvpGf/ljHK3IFFuigHIx+PQO3Ls+Fg9eRvKcg==
   dependencies:
     detect-libc "^1.0.3"
   optionalDependencies:
