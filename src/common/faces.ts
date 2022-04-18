@@ -65,6 +65,8 @@ export interface OrderInterfaceWithPair extends OrderInterface {
 export interface GlobalConfigInterface {
   CLOB_CONTRACT?: string;
   COMMUNITY_CONTRACT?: string;
+  /** VRT contract ID */
+  EXCHANGE_CONTRACT?: string;
   CACHE_CONFIG?: Partial<
     Omit<typeof CacheInterfaceConstants, "COMMUNITY_CONTRACT">
   >;

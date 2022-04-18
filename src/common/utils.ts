@@ -50,6 +50,9 @@ export default class Utils {
         this.CLOB_CONTRACT = globalConfig.CLOB_CONTRACT;
       if (globalConfig.COMMUNITY_CONTRACT)
         this.COMMUNITY_CONTRACT = globalConfig.COMMUNITY_CONTRACT;
+
+      if (globalConfig.EXCHANGE_CONTRACT)
+        this.EXCHANGE_CONTRACT = globalConfig.EXCHANGE_CONTRACT;
     }
   }
 
