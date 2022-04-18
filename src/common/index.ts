@@ -1,6 +1,7 @@
 import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
-import Arweave from "arweave";
+import { CacheInterfaceConstants } from "verto-cache-interface";
 import Utils, { ThreeEmModule } from "./utils";
+import Arweave from "arweave";
 import User from "./user";
 import Token from "./token";
 import Exchange from "./exchange";
@@ -44,6 +45,27 @@ export default class Verto {
   ) {
     if (arweave) this.arweave = arweave;
     if (wallet) this.wallet = wallet;
+
+    // configure the cache interface
+    if (globalConfig?.CACHE_CONFIG) {
+      const { CACHE_API, CONTRACT_CDN } = globalConfig.CACHE_CONFIG;
+
+      // cache api url
+      if (CACHE_API) {
+        CacheInterfaceConstants.CACHE_API = CACHE_API;
+      }
+
+      // contract cdn
+      if (CONTRACT_CDN) {
+        CacheInterfaceConstants.CONTRACT_CDN = CONTRACT_CDN;
+      }
+    }
+
+    // community contract id config
+    if (globalConfig?.COMMUNITY_CONTRACT) {
+      CacheInterfaceConstants.COMMUNITY_CONTRACT =
+        globalConfig.COMMUNITY_CONTRACT;
+    }
 
     this.cache = cache;
 

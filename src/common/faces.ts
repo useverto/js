@@ -3,6 +3,7 @@ import {
   OrderInterface,
   ClobState,
 } from "verto-internals/interfaces/contracts/clob";
+import { CacheInterfaceConstants } from "verto-cache-interface";
 
 // Community Interfaces
 
@@ -64,6 +65,9 @@ export interface OrderInterfaceWithPair extends OrderInterface {
 export interface GlobalConfigInterface {
   CLOB_CONTRACT?: string;
   COMMUNITY_CONTRACT?: string;
+  CACHE_CONFIG?: Partial<
+    Omit<typeof CacheInterfaceConstants, "COMMUNITY_CONTRACT">
+  >;
 }
 
 export interface VolumeOrderInterface {

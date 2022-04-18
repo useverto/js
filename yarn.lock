@@ -1868,12 +1868,22 @@ uuid@8.3.2, uuid@^8.0.0:
   resolved "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
 
-verto-cache-interface@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.npmjs.org/verto-cache-interface/-/verto-cache-interface-1.1.1.tgz"
-  integrity sha512-oOu3KIwW2+mNoySUsslcCV9/j6qd4mXcddhQLe2AKz9zpmuU7dbN4y262HGnWbOWIegJRiiUFFFfNFE1ib19CQ==
+verto-cache-interface@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/verto-cache-interface/-/verto-cache-interface-1.2.2.tgz#4270231279aa705458c2f6320e62c5e4dfbe7853"
+  integrity sha512-W8eJY4sv3RVZKUbhbpK4pyxt5YShi0fomnp5qt/WaK6+6v/fyyYHWq0rf83iTKLx+xTx7VSiJNoM/2XOTcU8Bw==
   dependencies:
     axios "^0.23.0"
+    verto-internals "^0.7.0"
+
+verto-internals@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/verto-internals/-/verto-internals-0.7.0.tgz#d408ca2ac1e4393c968e81a39d2e3194e5a6cc17"
+  integrity sha512-GP2qGXYZ/UrioBoPoixGDRkP7x9VMjMuK1j1B3ATSRDvFcBscDL0Y6O2aFIlRiBAGbjNtN5F3PjTM7ngnA+v/g==
+  dependencies:
+    "@google-cloud/datastore" "^6.6.2"
+    "@google-cloud/storage" "^5.17.0"
+    "@nestjs/common" "^8.2.5"
 
 verto-internals@^0.9.1:
   version "0.9.1"
