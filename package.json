@@ -23,8 +23,8 @@
     "fmt:check": "prettier --check ."
   },
   "dependencies": {
-    "@three-em/js": "^0.2.5",
-    "@three-em/node": "^0.2.8",
+    "@three-em/js": "^0.2.8",
+    "@three-em/node": "^0.2.10",
     "ar-gql": "^0.0.6",
     "arweave": "^1.10.23",
     "axios": "^0.24.0",

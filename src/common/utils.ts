@@ -144,8 +144,18 @@ export default class Utils {
    */
   public async getState<T = any>(addr: string): Promise<T> {
     if (this.cache) return (await fetchContract(addr))?.state;
-    // TODO: gateway config
-    else return (await this.three_em.executeContract(addr)).state;
+    else
+      return (
+        await this.three_em.executeContract(addr, undefined, {
+          host: this.arweave.api.getConfig().host || defaultGatewayConfig.host,
+          port: Number(
+            this.arweave.api.getConfig().port || defaultGatewayConfig.port
+          ),
+          protocol:
+            this.arweave.api.getConfig().protocol ||
+            defaultGatewayConfig.protocol,
+        })
+      ).state;
   }
 
   /**
@@ -217,7 +227,19 @@ export default class Utils {
 
       validity = contract?.validity;
     } else {
-      const contract = await this.three_em.executeContract(contractID);
+      const contract = await this.three_em.executeContract(
+        contractID,
+        undefined,
+        {
+          host: this.arweave.api.getConfig().host || defaultGatewayConfig.host,
+          port: Number(
+            this.arweave.api.getConfig().port || defaultGatewayConfig.port
+          ),
+          protocol:
+            this.arweave.api.getConfig().protocol ||
+            defaultGatewayConfig.protocol,
+        }
+      );
 
       validity = contract?.validity;
     }
@@ -585,10 +607,24 @@ export default class Utils {
   }
 }
 
+export const defaultGatewayConfig = {
+  host: "arweave.net",
+  port: 443,
+  protocol: "https",
+};
+
 export interface ThreeEmModule {
   executeContract: (
     tx: string,
-    maybeHeight?: number | undefined | null
+    maybeHeight?: number | undefined | null,
+    maybeConfig?:
+      | {
+          host: string;
+          port: number;
+          protocol: string;
+        }
+      | undefined
+      | null
   ) => Promise<{
     state: any;
     validity: Record<string, any>;

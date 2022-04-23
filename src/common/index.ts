@@ -1,16 +1,12 @@
 import { ExtensionOrJWK, GlobalConfigInterface } from "./faces";
 import { CacheInterfaceConstants } from "verto-cache-interface";
-import Utils, { ThreeEmModule } from "./utils";
+import Utils, { defaultGatewayConfig, ThreeEmModule } from "./utils";
 import Arweave from "arweave";
 import User from "./user";
 import Token from "./token";
 import Exchange from "./exchange";
 
-const client = new Arweave({
-  host: "arweave.net",
-  port: 443,
-  protocol: "https",
-});
+const client = new Arweave(defaultGatewayConfig);
 
 export default class Verto {
   public arweave = client;
