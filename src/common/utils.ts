@@ -104,6 +104,8 @@ export default class Utils {
     await this.arweave.transactions.sign(transaction, this.wallet);
     await this.arweave.transactions.post(transaction);
 
+    await this.mineIfNeeded();
+
     return transaction.id;
   }
 
@@ -135,6 +137,9 @@ export default class Utils {
         ]
       );
     }
+
+    // mine if testnet
+    await this.mineIfNeeded();
   }
 
   /**
@@ -542,6 +547,25 @@ export default class Utils {
     tomorrow.setHours(0, 0, 0, 0);
 
     return tomorrow;
+  }
+
+  /**
+   * Get if the current gateway is an arlocal network
+   * @returns Testnet or not
+   */
+  public async isTestnet() {
+    const networkInfo = await this.arweave.network.getInfo();
+    return networkInfo.network.includes("arlocal");
+  }
+
+  /**
+   * Calls the mine endpoint of a testnet (arlocal)
+   * network if necessary
+   */
+  public async mineIfNeeded() {
+    const testnet = await this.isTestnet();
+
+    if (testnet) await this.arweave.api.get("mine");
   }
 
   /**

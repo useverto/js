@@ -52,30 +52,34 @@ export default class Exchange {
         throw new Error(`Invalid token address in pair "${hash}".`);
     });
 
-    const interactionID = await cacheContractHook(
-      () =>
-        interactWrite(
-          this.arweave,
-          this.wallet,
-          this.utils.CLOB_CONTRACT,
+    const interactionID = await cacheContractHook(async () => {
+      // create interaction
+      const id = await interactWrite(
+        this.arweave,
+        this.wallet,
+        this.utils.CLOB_CONTRACT,
+        {
+          function: "addPair",
+          pair,
+        },
+        [
           {
-            function: "addPair",
-            pair,
+            name: "Exchange",
+            value: "Verto",
           },
-          [
-            {
-              name: "Exchange",
-              value: "Verto",
-            },
-            {
-              name: "Action",
-              value: "AddPair",
-            },
-            ...tags,
-          ]
-        ),
-      this.utils.CLOB_CONTRACT
-    );
+          {
+            name: "Action",
+            value: "AddPair",
+          },
+          ...tags,
+        ]
+      );
+
+      // mine if testnet
+      await this.utils.mineIfNeeded();
+
+      return id;
+    }, this.utils.CLOB_CONTRACT);
 
     if (!interactionID) throw new Error("Could not add pair.");
 
@@ -138,6 +142,9 @@ export default class Exchange {
         ]
       );
 
+      // mine if testnet
+      await this.utils.mineIfNeeded();
+
       // invoke foreign calls on token contracts
       await this.utils.syncFCP(this.utils.CLOB_CONTRACT, pair.from, pair.to);
 
@@ -152,8 +159,13 @@ export default class Exchange {
     // Create VRT holder fee
     await this.utils.createFee(amount, pair.from, orderID, "token_holder");
 
-    // Call Discord hook
-    axios.post(`https://hook.verto.exchange/api/transaction?id=${orderID}`);
+    // mine if testnet
+    await this.utils.mineIfNeeded();
+
+    // Call Discord hook if not testnet
+    if (!(await this.utils.isTestnet())) {
+      axios.post(`https://hook.verto.exchange/api/transaction?id=${orderID}`);
+    }
 
     return orderID;
   }
@@ -191,6 +203,10 @@ export default class Exchange {
           },
         ]
       );
+
+      // mine if testnet
+      await this.utils.mineIfNeeded();
+
       // sync fcp for the two tokens in the pair
       await this.utils.syncFCP(this.utils.CLOB_CONTRACT, ...order.pair);
 

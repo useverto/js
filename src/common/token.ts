@@ -475,8 +475,9 @@ export default class Token {
     target: string,
     tags: { name: string; value: string }[] = []
   ) {
-    const interaction = () =>
-      interactWrite(
+    const interaction = async () => {
+      // create interaction
+      const interactionID = interactWrite(
         this.arweave,
         this.wallet,
         id,
@@ -494,7 +495,13 @@ export default class Token {
         "0"
       );
 
-    // get listed tokens to see if we need to refres the cache
+      // mine if testnet
+      await this.utils.mineIfNeeded();
+
+      return interactionID;
+    };
+
+    // get listed tokens to see if we need to refresh the cache
     const listedTokens = await fetchTokens();
     let transaction: string | null;
 
@@ -523,8 +530,9 @@ export default class Token {
       throw new Error("Invalid token address.");
 
     const interactionID = await cacheContractHook(
-      () =>
-        interactWrite(
+      async () => {
+        // create interaction
+        const id = interactWrite(
           this.arweave,
           this.wallet,
           this.utils.COMMUNITY_CONTRACT,
@@ -544,7 +552,13 @@ export default class Token {
             },
             ...tags,
           ]
-        ),
+        );
+
+        // mine if testnet
+        await this.utils.mineIfNeeded();
+
+        return id;
+      },
       this.utils.COMMUNITY_CONTRACT,
       true
     );
