@@ -9,7 +9,7 @@ import { fetchContract } from "verto-cache-interface";
 import { Tag } from "arweave/node/lib/transaction";
 import { GQLEdgeInterface, GQLNodeInterface } from "ar-gql/dist/faces";
 import { run } from "ar-gql";
-import { interactWrite } from "smartweave";
+import { interactWrite, interactWriteDryRun } from "smartweave";
 import Arweave from "arweave";
 import axios from "axios";
 
@@ -566,6 +566,56 @@ export default class Utils {
     const testnet = await this.isTestnet();
 
     if (testnet) await this.arweave.api.get("mine");
+  }
+
+  /**
+   * Interacts with a contract and returns the
+   * result from the interaction
+   * @param contractID ID of the contract to interact with
+   * @param input Interaction input
+   * @param tags Optional tags
+   * @returns Result of the interaction
+   */
+  public async interactWriteWithResult<StateType, ResultType>(
+    contractID: string,
+    input: any,
+    tags?: { name: string; value: string }[]
+  ): Promise<{
+    interactionID: string;
+    type: "ok" | "error" | "exception";
+    result: ResultType;
+    state: StateType;
+  }> {
+    // Get the contract state
+    const contractState = await this.getState<StateType>(contractID);
+
+    // Simulates the interaction to get the result
+    // (in some rare cases, this might not be the
+    // final result)
+    const simulatedInteraction = await interactWriteDryRun(
+      this.arweave,
+      this.wallet,
+      contractID,
+      input,
+      tags,
+      undefined,
+      undefined,
+      contractState
+    );
+
+    // Writes the interaction to the chain
+    const interactionID = await interactWrite(
+      this.arweave,
+      this.wallet,
+      contractID,
+      input,
+      tags
+    );
+
+    return {
+      interactionID,
+      ...simulatedInteraction,
+    };
   }
 
   /**

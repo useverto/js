@@ -1,6 +1,7 @@
 import { cacheContractHook } from "verto-cache-interface";
 import {
   ClobContractStateInterface,
+  CreateOrderResult,
   DecodedTag,
   ExtensionOrJWK,
   OrderInterfaceWithPair,
@@ -118,37 +119,46 @@ export default class Exchange {
         [{ name: "Type", value: "Send-Input" }]
       );
 
-      // Create the swap interaction
-      const orderID = await interactWrite(
-        this.arweave,
-        this.wallet,
-        this.utils.CLOB_CONTRACT,
+      // Interaction input
+      const input = {
+        function: "createOrder",
+        transaction: transferID,
+        pair: [pair.from, pair.to],
+        price: price,
+      };
+
+      // Interaction tags
+      const interactionTags = [
         {
-          function: "createOrder",
-          transaction: transferID,
-          pair: [pair.from, pair.to],
-          price: price,
+          name: "Exchange",
+          value: "Verto",
         },
-        [
-          {
-            name: "Exchange",
-            value: "Verto",
-          },
-          {
-            name: "Action",
-            value: "Order",
-          },
-          ...tags,
-        ]
-      );
+        {
+          name: "Action",
+          value: "Order",
+        },
+        ...tags,
+      ];
 
-      // mine if testnet
-      await this.utils.mineIfNeeded();
+      // Create the swap interaction
+      const res = await this.utils.interactWriteWithResult<
+        ClobContractStateInterface,
+        CreateOrderResult
+      >(this.utils.CLOB_CONTRACT, input, interactionTags);
 
-      // invoke foreign calls on token contracts
-      await this.utils.syncFCP(this.utils.CLOB_CONTRACT, pair.from, pair.to);
+      // Validate result
+      if (res.type === "ok" && res.result.status === "success") {
+        // mine if testnet
+        await this.utils.mineIfNeeded();
 
-      return orderID;
+        // invoke foreign calls on token contracts
+        await this.utils.syncFCP(this.utils.CLOB_CONTRACT, pair.from, pair.to);
+
+        // return the order ID
+        return res.interactionID;
+      } else {
+        throw new Error(res.result.message);
+      }
     }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
 
     if (orderID === null) throw new Error("Could not create order");

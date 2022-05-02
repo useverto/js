@@ -96,3 +96,8 @@ export interface ValidityInterface {
 }
 
 export type ClobContractStateInterface = ClobState;
+
+export interface CreateOrderResult {
+  status: "success" | "failure";
+  message: string;
+}
