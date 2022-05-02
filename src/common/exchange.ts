@@ -147,7 +147,7 @@ export default class Exchange {
       >(this.utils.CLOB_CONTRACT, input, interactionTags);
 
       // Validate result
-      if (res.type === "ok" && res.result.status === "success") {
+      if (res.type === "ok" && res.result?.status === "success") {
         // mine if testnet
         await this.utils.mineIfNeeded();
 
@@ -157,7 +157,8 @@ export default class Exchange {
         // return the order ID
         return res.interactionID;
       } else {
-        throw new Error(res.result.message);
+        // @ts-expect-error | The result can be a string as well
+        throw new Error(res.result?.message || res.result);
       }
     }, [pair.from, this.utils.CLOB_CONTRACT, pair.to]);
 
