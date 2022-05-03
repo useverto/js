@@ -289,9 +289,9 @@ export default class Exchange {
   ): Promise<{
     /** The immediate tokens the user will receive */
     immediate: number;
-    /** The remaining amount of tokens the user
-     * would receive with an average price or limit price */
-    rest?: number;
+    /** The remaining amount of tokens for market orders.
+     * These tokens are refunded immediately */
+    remaining: number;
     /** Total fee charged */
     fee: number;
   }> {
@@ -359,22 +359,13 @@ export default class Exchange {
       }
     }
 
-    let rest: number | undefined = undefined;
-
-    // if there are still tokens left to swap
-    // calculate the receive amount using the
-    // average price or the limit price
-    if (remainingQuantity > 0) {
-      rest = remainingQuantity * (price || avgPrice);
-    }
-
     // calculate fee for the swap
     // exchange fee + holder fee
     const fee = this.utils.calculateFee(amount) * 2;
 
     return {
       immediate,
-      rest,
+      remaining: remainingQuantity,
       fee,
     };
   }
