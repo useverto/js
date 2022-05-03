@@ -292,6 +292,8 @@ export default class Exchange {
     /** The remaining amount of tokens the user
      * would receive with an average price or limit price */
     rest?: number;
+    /** Total fee charged */
+    fee: number;
   }> {
     /**
      * This function works almost the same way the order
@@ -366,9 +368,14 @@ export default class Exchange {
       rest = remainingQuantity * (price || avgPrice);
     }
 
+    // calculate fee for the swap
+    // exchange fee + holder fee
+    const fee = this.utils.calculateFee(amount) * 2;
+
     return {
       immediate,
       rest,
+      fee,
     };
   }
 }

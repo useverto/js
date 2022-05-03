@@ -56,6 +56,10 @@ export default class Utils {
     }
   }
 
+  public calculateFee(amount: number) {
+    return Math.ceil(Math.ceil(amount) * this.EXCHANGE_FEE);
+  }
+
   /**
    * Create a Verto fee on the network
    * @param amount Fee amount
@@ -70,7 +74,7 @@ export default class Utils {
     orderID: string,
     feeTarget: "exchange" | "token_holder"
   ): Promise<string> {
-    const fee = Math.ceil(Math.ceil(amount) * this.EXCHANGE_FEE);
+    const fee = this.calculateFee(amount);
     const target =
       feeTarget === "exchange"
         ? this.EXCHANGE_WALLET
