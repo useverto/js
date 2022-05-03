@@ -110,6 +110,9 @@ export default class Exchange {
         "Invalid ID in pair. Must be a valid SmartWeave contract ID"
       );
 
+    // Validate amount
+    if (amount <= 0) throw new Error("Amount must be greater than 0");
+
     const orderID = await cacheContractHook(async () => {
       // Transfer input tokens to the orderbook
       const transferID = await this.token.transfer(
@@ -268,5 +271,104 @@ export default class Exchange {
     const allOrders = await this.getOrderBook();
 
     return allOrders.find(({ id }) => id === orderID);
+  }
+
+  /**
+   * Estimate the amount of tokens the user would receive
+   * with the supplied order props. The function goes through
+   * the orderbook and adds up all compatible orders
+   * @param pair The two tokens to trade between. Must be an existing pair
+   * @param amount The amount of tokens sent to the contract
+   * @param price Optional price for the order
+   * @returns The estimated amount of tokens received
+   */
+  async estimateSwap(
+    pair: SwapPairInterface,
+    amount: number,
+    price?: number
+  ): Promise<{
+    /** The immediate tokens the user will receive */
+    immediate: number;
+    /** The remaining amount of tokens the user
+     * would receive with an average price or limit price */
+    rest?: number;
+  }> {
+    /**
+     * This function works almost the same way the order
+     * matching works in the CLOB contract.
+     */
+
+    // Validate hashes
+    if (
+      !this.utils.validateHash(pair.from) ||
+      !this.utils.validateHash(pair.to)
+    )
+      throw new Error(
+        "Invalid ID in pair. Must be a valid SmartWeave contract ID"
+      );
+
+    // Validate amount
+    if (amount <= 0) throw new Error("Amount must be greater than 0");
+
+    // fetch orderbook for this pair
+    const pairOrderbook = await this.getOrderBook([pair.from, pair.to]);
+    // filter orders against this
+    const reverseOrders = pairOrderbook.filter(
+      (order) => pair.from !== order.token
+    );
+    // all prices of orders in the same direction
+    const allPrices = pairOrderbook
+      .filter((order) => !reverseOrders.find(({ id }) => order.id === id))
+      .map(({ price }) => price);
+    // get avg price
+    const avgPrice = allPrices.reduce((a, b) => a + b, 0) / allPrices.length;
+
+    let immediate = 0;
+    // remaining amount of tokens to swap
+    let remainingQuantity = amount;
+
+    // loop through all orders
+    for (const order of reverseOrders) {
+      // break if there are no remaining tokens to swap
+      if (remainingQuantity <= 0) break;
+      // if it is a limit order and the price is not the same
+      // continue to the next order
+      if (price && order.price !== price) continue;
+
+      // price of the current order reversed to the input token
+      const reversePrice = 1 / order.price;
+
+      // last order to iterate through
+      if (remainingQuantity * (price ?? reversePrice) <= order.quantity) {
+        // add the amount of tokens the user would
+        // receive from this order
+        immediate += remainingQuantity * reversePrice;
+        // no more tokens to swap
+        remainingQuantity = 0;
+        // break from loop
+        break;
+      } else {
+        // add the amount of tokens the user would
+        // receive from this order
+        immediate += order.quantity;
+        // subtract the amount of tokens the user
+        // still needs to swap
+        remainingQuantity -= order.quantity * order.price;
+      }
+    }
+
+    let rest: number | undefined = undefined;
+
+    // if there are still tokens left to swap
+    // calculate the receive amount using the
+    // average price or the limit price
+    if (remainingQuantity > 0) {
+      rest = remainingQuantity * (price || avgPrice);
+    }
+
+    return {
+      immediate,
+      rest,
+    };
   }
 }
