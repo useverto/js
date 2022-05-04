@@ -29,7 +29,7 @@
     "arweave": "^1.10.23",
     "axios": "^0.24.0",
     "smartweave": "^0.4.46",
-    "verto-cache-interface": "^1.2.2",
+    "verto-cache-interface": "^1.2.3",
     "verto-internals": "^0.9.1"
   },
   "devDependencies": {
