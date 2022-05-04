@@ -167,17 +167,17 @@ export default class Exchange {
 
     if (orderID === null) throw new Error("Could not create order");
 
-    // Create exchange fee
-    await this.utils.createFee(amount, pair.from, orderID, "exchange");
+    // get if we are running on testnet
+    const testnet = await this.utils.isTestnet();
 
-    // Create VRT holder fee
-    await this.utils.createFee(amount, pair.from, orderID, "token_holder");
+    // Call Discord hook if not on testnet
+    if (!testnet) {
+      // Create exchange fee
+      await this.utils.createFee(amount, pair.from, orderID, "exchange");
 
-    // mine if testnet
-    await this.utils.mineIfNeeded();
+      // Create VRT holder fee
+      await this.utils.createFee(amount, pair.from, orderID, "token_holder");
 
-    // Call Discord hook if not testnet
-    if (!(await this.utils.isTestnet())) {
       axios.post(`https://hook.verto.exchange/api/transaction?id=${orderID}`);
     }
 
