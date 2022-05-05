@@ -122,6 +122,9 @@ export default class Exchange {
         [{ name: "Type", value: "Send-Input" }]
       );
 
+      // mine if testnet
+      await this.utils.mineIfNeeded();
+
       // Interaction input
       const input = {
         function: "createOrder",
