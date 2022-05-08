@@ -19,13 +19,10 @@
     - [Cancelling an order](#cancelling-an-order)
     - [Get the orderbook](#get-the-orderbook)
     - [Get an order](#get-an-order)
+    - [Get an estimate for a swap](#get-an-estimate-for-a-swap)
   - [Token](#token)
     - [Get tokens](#get-tokens)
     - [Get a token's type](#get-a-tokens-type)
-    - [Get a token's price](#get-a-tokens-price)
-    - [Get a token's price history](#get-a-tokens-price-history)
-    - [Get a token's volume](#get-a-tokens-volume)
-    - [Get a token's volume history](#get-a-tokens-volume-history)
     - [Get a flexible logo for the token](#get-a-flexible-logo-for-the-token)
     - [Transfer tokens](#transfer-tokens)
     - [List a token](#list-a-token)
@@ -184,6 +181,29 @@ The function takes one param:
 
 The function returns an order along with the token pair it belongs to.
 
+#### Get an estimate for a swap
+
+Calculates an estimate of the amount of tokens that the user would receive by making a swap.
+
+```ts
+const estimate = await client.exchange.estimateSwap(
+  [
+    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
+    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
+  ],
+  10,
+  3
+);
+```
+
+The function takes three params:
+
+- `pair`: The two tokens to trade between. Must be an existing pair
+- `amount`: The amount of tokens sent to the contract
+- `price`: _Optional._ Price for the order
+
+The function returns an object with all the costs for the swap, and how much the user would get refunded / received.
+
 ### Token
 
 #### Get tokens
@@ -215,80 +235,6 @@ The function takes one param:
 - `id`: Token contract id
 
 The function returns the type of the token.
-
-#### Get a token's price
-
-Fetches the price of a given token.
-
-```ts
-const price = await client.token.getPrice(
-  [
-    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
-    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
-  ],
-  [new Date("2021-12-6"), new Date("2021-12-7")]
-);
-```
-
-The function takes one param:
-
-- `pair`: Pairs to calculate price from. (One token of the first token = X tokens of the second)
-- `region`: Two dates to _fetch and average_ the price between `[from, to]`
-
-The function returns the token price for the **first item in the pair** averaged between the two dates.
-
-#### Get a token's price history
-
-Fetches the price history of a given token.
-
-```ts
-const history = await client.token.getPriceHistory(
-  [
-    "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A",
-    "-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ",
-  ],
-  [new Date("2021-06-7"), new Date("2021-12-7")]
-);
-```
-
-The function takes one param:
-
-- `pair`: Token contract id
-- `region`: Two dates to return prices between
-
-The function returns token prices for the **first item in the pair** between the two dates mapped with dates.
-
-#### Get a token's volume
-
-Fetches the volume of a given token.
-
-```ts
-const volume = await client.token.getVolume(
-  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
-);
-```
-
-The function takes one param:
-
-- `id`: Token contract id
-
-The function returns the volume of the token.
-
-#### Get a token's volume history
-
-Fetches the volume history of a given token.
-
-```ts
-const history = await client.token.getVolumeHistory(
-  "usjm4PCxUd5mtaon7zc97-dt-3qf67yPyqgzLnLqk5A"
-);
-```
-
-The function takes one param:
-
-- `id`: Token contract ID
-
-The function returns the volume history of the token.
 
 #### Get a flexible logo for the token
 
