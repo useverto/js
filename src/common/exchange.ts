@@ -320,16 +320,10 @@ export default class Exchange {
 
     // fetch orderbook for this pair
     const pairOrderbook = await this.getOrderBook([pair.from, pair.to]);
-    // filter orders against this
-    const reverseOrders = pairOrderbook.filter(
-      (order) => pair.from !== order.token
-    );
-    // all prices of orders in the same direction
-    const allPrices = pairOrderbook
-      .filter((order) => !reverseOrders.find(({ id }) => order.id === id))
-      .map(({ price }) => price);
-    // get avg price
-    const avgPrice = allPrices.reduce((a, b) => a + b, 0) / allPrices.length;
+    // filter orders against this order and sort them by their prices
+    const reverseOrders = pairOrderbook
+      .filter((order) => pair.from !== order.token)
+      .sort((a, b) => (a.price > b.price ? 1 : -1));
 
     let immediate = 0;
     // remaining amount of tokens to swap
