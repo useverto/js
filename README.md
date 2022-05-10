@@ -12,6 +12,7 @@
 
 - [Installation](#installation)
 - [Initialization](#initialization)
+- [Testnet usage](#testnet-usage)
 - [Usage](#usage)
   - [Exchange](#exchange)
     - [Adding a new pair](#adding-a-new-pair)
@@ -65,6 +66,32 @@ const client = new Verto(
   {
     CLOB_CONTRACT: "...", // optional custom clob contract
     COMMUNITY_CONTRACT: "..." // optional custom community contract
+  }
+);
+```
+
+## Testnet usage
+
+For the Verto testnet, you can use the following configuration:
+
+```ts
+const client = new Verto(
+  "use_wallet", // can be configured
+  new Arweave({
+    host: "www.arweave.run",
+    port: "443",
+    protocol: "https",
+  }),
+  true, // can be configured
+  {
+    COMMUNITY_CONTRACT: "DPfCGDfo1_hzDjdVFQt97dkIylYXlZGrBUnBNnyKVo8",
+    CLOB_CONTRACT: "EfmXSfl1wROwAKwFdQoeUYK09yM-6JXYCGi4eEJHLpI",
+    CACHE_CONFIG: {
+      CONTRACT_CDN:
+        "https://storage.googleapis.com/verto-exchange-contracts-stage",
+      CACHE_API: "https://verto-qa.wn.r.appspot.com",
+    },
+    EXCHANGE_CONTRACT: "dmxxf7KcAvMnHozZesdpfAmhZl7gtU9SaM8KdW8y4LA",
   }
 );
 ```
