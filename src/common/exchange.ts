@@ -153,7 +153,21 @@ export default class Exchange {
       >(this.utils.CLOB_CONTRACT, input, interactionTags);
 
       // Validate result
-      if (res.type === "ok" && res.result?.status === "success") {
+      let resultValid = res.type === "ok" && res.result?.status === "success";
+
+      // if the pair is not yet in the orderbook, we still let the order go through,
+      // maybe it was just not mined yet
+      if (
+        res.result?.message
+          .toLowerCase()
+          .includes("this pair does not exist yet")
+      ) {
+        resultValid = true;
+
+        if (console) console.warn("Pair not yet in orderbook");
+      }
+
+      if (resultValid) {
         // mine if testnet
         await this.utils.mineIfNeeded();
 
