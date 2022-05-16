@@ -119,6 +119,10 @@ export default class User {
               logo: this.utils.getPSTSettingValue("communityLogo", tokenState),
               balance: tokenState.balances[address],
               userAddress: address,
+              // @ts-expect-error
+              username: communityContractState.people.find((person) =>
+                person.addresses.includes(address)
+              )?.username,
               type: token.type,
             });
           }
