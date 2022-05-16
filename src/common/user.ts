@@ -311,16 +311,18 @@ export default class User {
             parsedInput.qty &&
             contractID
           ) {
-            const contract = await fetchContract(contractID, true);
+            try {
+              const contract = await fetchContract(contractID, true);
 
-            if (contract) {
-              amount = `${parsedInput.qty} ${
-                contract.state ? contract.state.ticker : "???"
-              }`;
+              if (contract) {
+                amount = `${parsedInput.qty} ${
+                  contract.state ? contract.state.ticker : "???"
+                }`;
 
-              if (contract.validity && contract.validity[node.id] === false)
-                status = "error";
-            }
+                if (contract.validity && contract.validity[node.id] === false)
+                  status = "error";
+              }
+            } catch {}
           }
         }
       }
