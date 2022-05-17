@@ -84,14 +84,14 @@ const client = new Verto(
   }),
   true, // can be configured
   {
-    COMMUNITY_CONTRACT: "DPfCGDfo1_hzDjdVFQt97dkIylYXlZGrBUnBNnyKVo8",
-    CLOB_CONTRACT: "EfmXSfl1wROwAKwFdQoeUYK09yM-6JXYCGi4eEJHLpI",
+    COMMUNITY_CONTRACT: "ppk1GzzOU2hwjEUMqVkqyAvsj-BPakNzuEKEzhJtyJE",
+    CLOB_CONTRACT: "ySwuiyQGm-jDDa2OD1ub6QLWTCklOxkPesnaJnmoFUc",
     CACHE_CONFIG: {
       CONTRACT_CDN:
         "https://storage.googleapis.com/verto-exchange-contracts-stage",
       CACHE_API: "https://verto-qa.wn.r.appspot.com",
     },
-    EXCHANGE_CONTRACT: "dmxxf7KcAvMnHozZesdpfAmhZl7gtU9SaM8KdW8y4LA",
+    EXCHANGE_CONTRACT: "krW6M5Y1zqcWorlWjSURE-C7s0UsLO5whuOBLDecNlg",
   }
 );
 ```
